@@ -1,0 +1,107 @@
+{
+  "_README": "Map each operation (a .tap toolpath) to the QC SL numbers it produces. Open the drawing, and for every ballooned dimension in `_qc_dimensions` decide which operation cuts that surface/feature, then add its SL number to that operation's list below. Re-run closed_loop.py. An operation left [] gets outcome 'unmapped'; mapped but not measured -> 'unmeasured'; otherwise PASS/FAIL from the linked dimensions. `_operations` tells you what each operation makes; `_qc_dimensions` is nominal + measured for each SL.",
+  "_operations": {
+    "10END_FLAT": "face | endmill Ø10.0 | raster_flat WP2 | X-54.0..54.0 Y-39.0..39.0 Z0.0..100.0",
+    "1_10end_outer": "outer profile (rough) | endmill Ø10.0 | constantz WP2 | X-59.1..59.1 Y-44.1..44.1 Z-10.0..100.0",
+    "1_10end_ruf": "roughing | endmill Ø10.0 | offset_area_clear WP1 | X-54.0..54.0 Y-39.0..39.0 Z-2.8..100.0",
+    "2_10end_outer_fin": "outer profile (finish) | endmill Ø10.0 | constantz WP2 | X-59.0..59.0 Y-44.0..44.0 Z-10.0..100.0",
+    "2_4end_rest": "rest machining | endmill Ø4.0 | offset_area_clear WP1 | X-54.0..54.0 Y-39.0..39.0 Z-4.7..100.0",
+    "3_1cd": "spot/centre drill | drill Ø1.0 | drill WP2 | X-47.5..47.5 Y-34.5..34.5 Z0.0..100.0",
+    "3_4end_fin": "finishing pass | endmill Ø4.0 | constantz WP1 | X-54.0..54.0 Y-40.5..40.5 Z-2.5..100.0",
+    "4_3.2drill": "drilled holes | drill Ø1.0 | drill WP2 | X-47.5..47.5 Y-34.5..34.5 Z-15.0..100.0",
+    "4_4end_flat": "face | endmill Ø4.0 | offset_flat WP1 | X-54.0..54.0 Y-39.0..39.0 Z-3.0..100.0",
+    "5_4boll_fin": "3D / ball-nose | ballnosed Ø4.0 | opti_constz WP1 | X-53.8..53.8 Y-21.1..21.1 Z-5.6..100.0",
+    "5_6end": "milling | endmill Ø6.0 | offset_area_clear WP2 | X-54.0..54.0 Y-39.0..39.0 Z-8.0..100.0",
+    "6_2end_fin": "finishing pass | endmill Ø2.0 | constantz WP1 | X-56.4..56.5 Y-34.4..34.4 Z-7.5..100.0",
+    "6_4end": "milling | endmill Ø4.0 | constantz WP2 | X-54.0..54.0 Y-39.0..39.0 Z-8.0..100.0",
+    "7_2end_fin_1": "finishing pass | endmill Ø2.0 | constantz WP1 | X-55.3..55.3 Y-32.2..32.2 Z-3.0..100.0",
+    "7_4end_flat": "face | endmill Ø4.0 | offset_flat WP2 | X-54.0..54.0 Y-39.0..39.0 Z-6.0..100.0",
+    "8_2end_fi": "milling | endmill Ø2.0 | constantz WP1 | X-53.0..53.0 Y-39.5..39.5 Z-3.0..100.0"
+  },
+  "_qc_dimensions": {
+    "1": "78 — measured [78.04, 78.06]",
+    "2": "12 — measured [12.03, 12.04]",
+    "3": "12 — measured [12.04, 12.05]",
+    "4": "108 — measured [108.05, 108.06]",
+    "5": "1 — measured [0.98, 1.01]",
+    "6": "3 — measured [2.96, 2.97]",
+    "7": "3 — measured [2.98, 2.99]",
+    "8": "Ø9 — measured [8.95, 8.96]",
+    "9": "60 — measured [60.04, 60.05]",
+    "10": "70 — measured [70.05, 70.06]",
+    "11": "Ø6.2 — measured [6.11, 6.12]",
+    "12": "9.5 — measured [9.47, 9.48]",
+    "13": "7.5 — measured [7.5, 7.51]",
+    "14": "Ø7.2 — measured [7.17, 7.18]",
+    "15": "5 — measured [5.04, 5.05]",
+    "16": "9.1 — measured [9.05, 9.06]",
+    "17": "54 — measured [54.05, 54.06]",
+    "18": "3.1 — measured [3.06, 3.07]",
+    "19": "5 — measured [5.1, 5.13]"
+  },
+  "_example": {
+    "<operation name>": [
+      1,
+      4
+    ]
+  },
+  "10END_FLAT": [],
+  "1_10end_outer": [
+    1,
+    4
+  ],
+  "1_10end_ruf": [],
+  "2_10end_outer_fin": [
+    1,
+    4
+  ],
+  "2_4end_rest": [
+    6,
+    8,
+    17,
+    18,
+    19
+  ],
+  "3_1cd": [],
+  "3_4end_fin": [
+    6,
+    8
+  ],
+  "4_3.2drill": [
+    9,
+    10
+  ],
+  "4_4end_flat": [
+    2,
+    3,
+    17,
+    19
+  ],
+  "5_4boll_fin": [
+    18
+  ],
+  "5_6end": [
+    11,
+    12,
+    13,
+    15,
+    16
+  ],
+  "6_2end_fin": [],
+  "6_4end": [
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "7_2end_fin_1": [],
+  "7_4end_flat": [
+    5,
+    7
+  ],
+  "8_2end_fi": [
+    8
+  ]
+}

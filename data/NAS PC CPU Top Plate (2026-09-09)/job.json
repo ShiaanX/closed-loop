@@ -1,0 +1,82 @@
+{
+  "_README": "Filled from the report's Inputs tab. Put this file in the part folder and re-run closed_loop.py.",
+  "part": "RKSE-004-053",
+  "part_name": "NAS PC CPU Top Plate",
+  "quantity": 1,
+  "material": "al",
+  "machine": "STM",
+  "factory": "krishna",
+  "runs": [
+    {
+      "start": "2026-09-09T03:30:00Z",
+      "end": "2026-09-09T13:00:00Z",
+      "note": "one machining session; edit to the real shop-floor window(s). Add more {start,end} objects if the job ran across sessions/days."
+    }
+  ],
+  "setups": [
+    {
+      "id": "WP1",
+      "cam_workplane": "1",
+      "operations": [
+        "1_10end",
+        "2_10end_1",
+        "3_4end",
+        "4_1cd",
+        "5_3.2drill"
+      ],
+      "orientation": "",
+      "workholding": {
+        "type": "",
+        "detail": "Part on a drilled aluminium sub-plate bolted to the machine table; held by two step/strap clamps on studs (T-nuts), one each side, clamping the part edges down onto the sub-plate. Flood coolant. Same fixturing for both setups; part flipped between them. (From the Workholding photos — refine if needed.)",
+        "datum_touched_off": "",
+        "gcode_offset": "G54"
+      },
+      "stock_actual_mm": {
+        "x": null,
+        "y": null,
+        "z": null
+      },
+      "notes": ""
+    },
+    {
+      "id": "WP2",
+      "cam_workplane": "2",
+      "operations": [
+        "1",
+        "1_10end_ruf",
+        "2_4end_ruf"
+      ],
+      "orientation": "",
+      "workholding": {
+        "type": "",
+        "detail": "Part on a drilled aluminium sub-plate bolted to the machine table; held by two step/strap clamps on studs (T-nuts), one each side, clamping the part edges down onto the sub-plate. Flood coolant. Same fixturing for both setups; part flipped between them. (From the Workholding photos — refine if needed.)",
+        "datum_touched_off": "",
+        "gcode_offset": "G54"
+      },
+      "stock_actual_mm": {
+        "x": null,
+        "y": null,
+        "z": null
+      },
+      "notes": ""
+    }
+  ],
+  "outcome": {
+    "parts_good": null,
+    "parts_scrap": 0,
+    "rework": "",
+    "notes": ""
+  },
+  "excluded_runs": [
+    {
+      "program_name": "1_10END.TAP",
+      "start": "2026-09-09T11:49:26Z",
+      "reason": "a different part reusing the same program name, run around end of day (~5pm IST) after Top Plate was essentially finished"
+    },
+    {
+      "program_name": "2_10END_1.TAP",
+      "start": "2026-09-09T12:00:09Z",
+      "reason": "same — different part, not Top Plate"
+    }
+  ]
+}

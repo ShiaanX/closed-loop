@@ -1,0 +1,1301 @@
+<title>Krishna STM Telemetry</title>
+<style>
+  :root{
+    --primary:#2160b7; --primary-light:#e0edff;
+    --ink:#1a202c; --ink-2:#4a5568; --muted:#718096; --faint:#a0aec0;
+    --line:#e2e8f0; --line-soft:#edf2f7; --head-bg:#f8fafc; --page:#f4f6fa;
+    --card-shadow:0 2px 4px rgba(0,0,0,0.05);
+    --s1:#2a78d6;  /* cutting          */
+    --s2:#eb6834;  /* stopped          */
+    --s3:#1baf7a;  /* air/positioning  */
+    --g-c:#16A34A; --g-bg:#DCFCE7;
+    --a-c:#D97706; --a-bg:#FEF3C7;
+    --r-c:#DC2626; --r-bg:#FEE2E2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+       font:14px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:2rem}
+  a{color:var(--primary)}
+  code{background:#f1f5f9;padding:1px 5px;border-radius:5px;font-size:.86em}
+
+  h1{font-size:1.5rem;font-weight:600;margin:0 0 .25rem;display:flex;align-items:center;gap:.5rem}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 1.5rem}
+  .sec{font-size:1.25rem;font-weight:600;margin:2rem 0 1rem}
+  .lead{color:var(--ink-2);font-size:.9rem;margin:-.4rem 0 1.2rem}
+
+  .card{background:#fff;border-radius:16px;box-shadow:var(--card-shadow);padding:1.5rem;margin-bottom:1.5rem}
+  .card h3{margin:0 0 1rem;font-size:1rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:.4rem}
+
+  /* filter panel */
+  .filters{background:#fff;border-radius:16px;box-shadow:var(--card-shadow);padding:1.25rem 1.5rem;margin-bottom:1.5rem}
+  .filters .fh{display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;font-size:.875rem;font-weight:600;color:var(--ink-2)}
+  .frow{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end}
+  .fld{display:flex;flex-direction:column;gap:.5rem}
+  .fld label{font-size:.8125rem;font-weight:600;color:var(--muted)}
+  .fld .control{padding:.625rem 1rem;border-radius:8px;border:1px solid var(--line);background:#fff;
+                font-size:.875rem;color:var(--ink);min-width:150px}
+  .fld .control[disabled]{background:#f8fafc;color:var(--ink-2);cursor:not-allowed}
+  .note{font-size:.8rem;color:var(--muted);margin:.9rem 0 0}
+
+  /* tab bar */
+  .tabs{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+  .tabs button{background:#f0f0f0;color:#333;border:none;padding:.5rem 1rem;border-radius:8px;
+               cursor:pointer;font-weight:600;font-size:.875rem;transition:all .15s}
+  .tabs button[aria-selected="true"]{background:var(--primary);color:#fff}
+
+  /* stat tiles */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.5rem;margin-bottom:1.5rem}
+  .tile{background:#fff;border-radius:16px;box-shadow:var(--card-shadow);padding:1.25rem 1.4rem;
+        display:flex;align-items:center;gap:1rem}
+  .tile .ic{width:44px;height:44px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center}
+  .tile .tl{display:block;font-size:.8rem;color:var(--muted);margin-bottom:3px}
+  .tile .tv{font-weight:700;font-size:1.35rem;letter-spacing:-.02em;line-height:1.15}
+  .tile .th{font-size:.76rem;color:var(--ink-2);margin-top:2px}
+
+  /* pills / chips */
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:.25rem .75rem;border-radius:9999px;
+        font-size:.75rem;font-weight:700}
+  .pill .dot{width:7px;height:7px;border-radius:50%}
+  .chip{display:inline-block;font-size:.75rem;padding:3px 10px;border-radius:9999px;border:1px solid var(--line);
+        color:var(--ink-2);margin:3px 6px 3px 0;font-variant-numeric:tabular-nums}
+  .chiplabel{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-right:6px}
+
+  ul.ins{list-style:none;margin:0;padding:0}
+  ul.ins li{padding:.7rem 0 .7rem 1.15rem;border-bottom:1px solid var(--line-soft);position:relative;color:var(--ink-2)}
+  ul.ins li:last-child{border-bottom:0}
+  ul.ins li::before{content:"";position:absolute;left:2px;top:1.05rem;width:6px;height:6px;border-radius:50%;background:var(--primary)}
+
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 14px;font-size:.82rem;color:var(--ink-2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:.84rem}
+  thead{background:var(--head-bg)}
+  th,td{text-align:right;padding:.7rem .9rem;border-bottom:1px solid var(--line-soft);white-space:nowrap;
+        font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+  th{color:var(--ink-2);font-weight:700;font-size:.75rem;border-bottom:1px solid var(--line)}
+  tbody tr:hover{background:#f8fafc}
+  .mono{font-variant-numeric:tabular-nums}
+  .dim{color:var(--faint)}
+
+  .gap{background:#fff;border-radius:16px;box-shadow:var(--card-shadow);border-left:3px solid var(--line);
+       padding:16px 20px;margin-bottom:12px}
+  .gap.absent{border-left-color:var(--r-c)} .gap.constant,.gap.sparse{border-left-color:var(--a-c)}
+  .gap.misleading{border-left-color:var(--a-c)}
+  .gap header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .gap code{font-size:.9rem;font-weight:700}
+  .gap p{margin:5px 0;color:var(--ink-2);font-size:.87rem}
+  .gap .lbl{color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;margin-right:6px}
+
+  .partcard{background:#fff;border-radius:16px;box-shadow:var(--card-shadow);padding:1.4rem 1.5rem;margin-bottom:1.25rem}
+  .partgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1.1rem;margin-top:1rem}
+  .partgrid .k{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+  .partgrid .v{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
+  .warnbox{border:1px solid var(--a-c);border-left-width:3px;border-radius:12px;padding:12px 16px;margin:14px 0 0;
+           background:var(--a-bg)}
+  .warnbox b{display:block;margin-bottom:3px}
+  .warnbox p{margin:3px 0;font-size:.86rem;color:#7a4a08}
+
+  details summary{cursor:pointer;color:var(--primary);font-size:.85rem;padding:8px 0;user-select:none;font-weight:600}
+
+  .info{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;
+        border:1px solid var(--faint);color:var(--muted);font-size:9.5px;font-weight:700;cursor:help;
+        vertical-align:1px;margin-left:5px;font-style:normal;flex:none}
+  .info:hover{border-color:var(--ink);color:var(--ink)}
+
+  svg{display:block;max-width:100%}
+  .tick{fill:var(--muted);font-size:11px}
+  .lbl-in{fill:#fff;font-size:10.5px;font-weight:700}
+  .val{fill:var(--ink);font-size:11px;font-variant-numeric:tabular-nums}
+  .gl{stroke:var(--line-soft);stroke-width:1}
+  .bl{stroke:var(--line);stroke-width:1}
+  .seg{stroke:#fff;stroke-width:2}
+  .seg:hover,.barmark:hover{opacity:.82;cursor:default}
+
+  .tt{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;z-index:99;background:#fff;
+      border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:.78rem;
+      box-shadow:0 8px 24px rgba(0,0,0,.14);max-width:280px}
+  .tt b{display:block;margin-bottom:3px;color:var(--ink)}
+  .tt div{color:var(--ink-2);font-variant-numeric:tabular-nums}
+  [hidden]{display:none!important}
+
+  /* inputs form */
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 18px;margin:12px 0 4px}
+  .fgrid.wide{grid-template-columns:1fr}
+  .fgrid label{display:block;font-size:.76rem;color:var(--ink-2);font-weight:600;margin-bottom:4px}
+  .inp{width:100%;padding:.5rem .65rem;border:1px solid var(--line);border-radius:8px;font-size:.85rem;
+       color:var(--ink);background:#fff;font-family:inherit}
+  .inp:focus{outline:2px solid var(--primary-light);border-color:var(--primary)}
+  textarea.inp{min-height:50px;resize:vertical}
+  .btn{background:var(--primary);color:#fff;border:none;padding:.55rem 1.05rem;border-radius:8px;cursor:pointer;
+       font-weight:600;font-size:.83rem}
+  .btn.sec{background:#eef2f7;color:var(--ink)}
+  .btn:hover{opacity:.92}
+  .qcchip{display:inline-block;font-size:.74rem;padding:3px 9px;border-radius:9999px;border:1px solid var(--line);
+          color:var(--muted);margin:2px 4px 2px 0;cursor:pointer;font-variant-numeric:tabular-nums;user-select:none}
+  .qcchip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .saved{font-size:.78rem;color:var(--muted);margin-left:10px}
+  .setupblk{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:12px}
+</style>
+
+<div class="wrap">
+  <h1>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2160b7" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="4" width="3" height="14"/></svg>
+    Krishna <span class="dim">·</span> STM controller telemetry
+  </h1>
+  <p class="sub" id="sub"></p>
+  <div id="app"></div>
+</div>
+<div class="tt" id="tt"></div>
+
+<script>
+const RAW = /*__DATA__*/null;
+/* multi-part reports inject {machined_parts:[{label,part_id,payload}], knowledge_rules, generated_at};
+   single-part reports inject the payload directly. DATA always points at the active part's payload. */
+const MACHINED = RAW && RAW.machined_parts;
+let PART_IX = 0;
+let DATA;
+function activatePart(i){
+  PART_IX = i;
+  DATA = MACHINED ? MACHINED[i].payload : RAW;
+  if(MACHINED && RAW.knowledge_rules){
+    DATA.closed_loop = DATA.closed_loop || {};
+    DATA.closed_loop.knowledge_rules = RAW.knowledge_rules;
+  }
+}
+activatePart(0);
+
+/* ---------- helpers ---------- */
+const esc = (s) => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtDur = (s) => { if(s==null) return '—'; s=Math.round(s);
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return h? `${h}h ${m}m` : m? `${m}m ${x}s` : `${x}s`; };
+/* machine timestamps in InfluxDB are UTC; the shop is IST (UTC+5:30). Show IST everywhere. */
+const IST_MS = 5.5 * 3600 * 1000;
+const _ist = (iso) => new Date(new Date(iso).getTime() + IST_MS);
+const fmtClock = (iso) => iso ? _ist(iso).toISOString().slice(11,19) : '—';
+const fmtDate  = (iso) => iso ? _ist(iso).toISOString().slice(0,10)  : '—';
+const fmtDT    = (iso) => iso ? _ist(iso).toISOString().slice(0,16).replace('T',' ') : '—';
+const num = (v,d=0) => v==null ? '—' : Number(v).toFixed(d);
+function ovrCell(o){
+  if(!o || !o.available) return '<span class="dim">—</span>';
+  const lo = o.min_active ?? o.min, hi = o.max_active ?? o.max, md = o.median_active ?? o.median;
+  if(lo==null) return '100% <span class="dim">(flat)</span>';
+  if(lo===hi) return `${lo}%`;
+  return `${lo}–${hi}%${md!=null?` <span class="dim">(med ${md})</span>`:''}`;
+}
+
+const tt = document.getElementById('tt');
+function hookTip(el, html){
+  el.addEventListener('mousemove', e => {
+    tt.innerHTML = html; tt.style.opacity = 1;
+    const r = tt.getBoundingClientRect();
+    tt.style.left = Math.min(e.clientX+14, innerWidth-r.width-10)+'px';
+    tt.style.top  = Math.min(e.clientY+14, innerHeight-r.height-10)+'px';
+  });
+  el.addEventListener('mouseleave', () => tt.style.opacity = 0);
+}
+function bindTip(el){
+  const p = el.getAttribute('data-tip').split('|');
+  hookTip(el, `<b>${esc(p[0])}</b>` + p.slice(1).map(x=>`<div>${esc(x)}</div>`).join(''));
+}
+
+/* ---------- definitions ---------- */
+const DEFS = {
+  samples: "One reading from the machine, roughly once a second or a bit slower. About 5,800 readings is about 96 minutes of data. It counts readings, not parts or cycles.",
+  utilisation: "How much of the time we have data for, the machine was actually running rather than stopped or paused. Only counts time we actually logged — hours the shop PC was switched off aren't counted as idle, they're just missing, which is what Log coverage tells you.",
+  coverage: "How much of this time window we actually have data for. A gap counts against this when there's a stretch with no readings at all — almost always the shop PC being switched off, not the machine itself. This machine only reports a reading every second or two even when everything's working fine (see \"avg samples/s\" below), so don't expect this number near 100% just because logging was perfect — it's about gaps, not reading frequency.",
+  window: "The stretch of time this report covers — from the first reading we have to the last. It isn't necessarily the whole length of the job.",
+  cutting: "Time the machine was actually cutting — running, with the tool feeding into the part and removing metal.",
+  air: "Time the machine was running but not cutting — moving quickly between cuts, changing tools, spinning up to speed, or a brief pause. The spindle may be turning; nothing is being removed.",
+  stopped: "Time the machine was paused or stopped mid-program — feed-hold, or a reset. We checked this against the machine's own status flag and it's reliable. Doesn't include time the operator spent jogging the machine by hand — that's its own Manual/MDI tile.",
+  manual: "Time the operator was moving the machine by hand — jogging, or typing commands in directly (MDI) — rather than a program running automatically. If they fed the tool into the part manually during this time, that cutting is real but doesn't show up as \"Cutting\" above, because no program was tracking it: it counts here instead. Worked out from the machine's own auto/manual flag, checked against known jogging sessions.",
+  untracked: "Time we simply have no data for. The gap between two readings was too long to be normal sampling — almost always the shop PC being off. Shown honestly rather than hidden, so the numbers on this page add up to the real window.",
+  setup: "Time between one job finishing and the next one starting — the next program was loaded on the machine but the operator hadn't pressed start yet (tool change, re-fixturing, etc).",
+  cutting_ratio: "Of all the time the machine was running, the share actually spent cutting rather than moving between cuts.",
+  operations: "One machining program — usually one tool doing one job, like roughing a profile or drilling a set of holes. This part has 8 of them. The number at the start of each name is just the run order, not a setup number.",
+  cycles: "One full run of a program, from pressing start to it finishing. Most programs run once; sometimes the operator runs the same one again — e.g. to skim a face down to size. So: an operation is the program, a cycle is one run of it. Comparing repeat cycles of the same program is the cleanest way to see run-to-run consistency.",
+  cycle_time: "How long the program took, by the machine's own clock — the whole thing, cutting and pauses included.",
+  wall: "How long the operation actually took, by the clock, start to finish — measured from our own readings, since this machine doesn't report its own elapsed time.",
+  rpm_median: "The typical spindle speed while it was cutting. Compare it to the speed the program asked for.",
+  feed_median: "The typical feed rate while cutting. Compare it to the feed rate the program asked for — the Feed ovr column shows the operator's actual override setting directly, where we have it.",
+  load_max: "The highest spindle-load reading seen during the operation. This machine mostly reports 0 with the odd spike, so treat this one as unreliable for now.",
+  alarm: "How often the machine was showing an alarm during this operation. We're not yet sure if that means the alarm was active right then, or just hadn't been cleared since earlier — treat it as a rough flag, not a hard fact.",
+  state: "What the machine reported it was doing, as a share of readings: running, paused/stopped, or reset.",
+  elapsed: "How much of the job we actually have data for, start to finish — not necessarily how long the job really took. Compare it to the real shop-floor time if you know it.",
+};
+function infoIcon(keyOrText, term){
+  if(!keyOrText) return '';
+  const text = DEFS[keyOrText] || keyOrText;
+  const head = term || (DEFS[keyOrText] ? keyOrText.replace(/_/g,' ') : 'Definition');
+  return `<i class="info" data-tip="${esc(head)}|${esc(text)}">i</i>`;
+}
+
+/* ---------- tiny icon set (match the public-analytics icon-square look) ---------- */
+const IC = {
+  gauge:'<path d="M12 14l4-4"/><path d="M4 20a8 8 0 1 1 16 0"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  wave:'<path d="M3 12h3l3 7 4-14 3 7h5"/>',
+  cut:'<path d="M6 3v18"/><path d="M6 12h12"/><circle cx="18" cy="8" r="2"/><circle cx="18" cy="16" r="2"/>',
+  arrows:'<path d="M4 12h16"/><path d="m14 6 6 6-6 6"/>',
+  pause:'<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>',
+  wrench:'<path d="M14 7a4 4 0 1 0-5.5 5.5L3 18l3 3 5.5-5.5A4 4 0 0 0 14 7Z"/>',
+  gapdash:'<path d="M3 12h4"/><path d="M11 12h2"/><path d="M17 12h4"/>',
+  bell:'<path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 21h4"/>',
+  hand:'<path d="M8 11V6a2 2 0 1 1 4 0v5"/><path d="M12 10V4a2 2 0 1 1 4 0v7"/><path d="M16 10.5V7a2 2 0 1 1 4 0v6a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L4.3 13a1.8 1.8 0 0 1 2.8-2.2L8 12"/>',
+};
+function tile(icKey, tint, tintBg, label, defKey, value, hint){
+  return `<div class="tile">
+    <div class="ic" style="background:${tintBg};color:${tint}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[icKey]||''}</svg>
+    </div>
+    <div><span class="tl">${esc(label)}${defKey?infoIcon(defKey,label):''}</span>
+      <span class="tv">${value}</span>${hint?`<div class="th">${hint}</div>`:''}</div>
+  </div>`;
+}
+
+function statePill(dist){
+  const names = {'0':'reset','1':'running','2':'feed-hold / stop','3':'running'};
+  return `<span class="chiplabel">machine state ${infoIcon('state','machine state')}</span> `
+    + Object.entries(dist||{}).map(([k,v]) => `<span class="chip">${k} = ${names[k]||'?'} <b>${v}%</b></span>`).join('');
+}
+
+/* ---------- charts (inline SVG, no deps) ---------- */
+function stackedTime(runs){
+  const rowH=30, gap=9, padL=200, padR=64, padT=8, W=900;
+  const H = padT + runs.length*(rowH+gap);
+  const rtot = r => r.timing.cutting_s + r.timing.air_s + (r.timing.stopped_s||0);
+  const max = Math.max(...runs.map(rtot), 1);
+  const x = v => (v/max)*(W-padL-padR);
+  const series = [['cutting_s','Cutting','var(--s1)'],['air_s','Air / positioning','var(--s3)'],['stopped_s','Stopped','var(--s2)']];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Time breakdown per operation">`;
+  for(let i=0;i<=4;i++){ const gx=padL+x(max*i/4);
+    s += `<line class="gl" x1="${gx}" y1="${padT}" x2="${gx}" y2="${H-4}"/>`;
+    s += `<text class="tick" x="${gx}" y="${H}" text-anchor="middle">${Math.round(max*i/4/60)}m</text>`; }
+  s += `<line class="bl" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-4}"/>`;
+  runs.forEach((r,i) => {
+    const y = padT + i*(rowH+gap);
+    const name = r.parsed.label && r.parsed.label!==r.program_name ? r.parsed.label : r.program_name;
+    s += `<text class="tick" x="${padL-10}" y="${y+rowH/2+4}" text-anchor="end" fill="var(--ink)">${esc(name)}</text>`;
+    let cx = padL; const tot = rtot(r);
+    series.forEach(([k,label,col],si) => {
+      const w = x(r.timing[k]||0); if(w<=0) return;
+      const first = cx===padL, last = si===series.length-1;
+      s += `<rect class="seg" data-tip="${esc(r.program_name)}|${label}|${fmtDur(r.timing[k])}|${(100*(r.timing[k]||0)/(tot||1)).toFixed(1)}%"
+             x="${cx}" y="${y}" width="${w}" height="${rowH}" fill="${col}" rx="${first||last?4:0}"/>`;
+      if(w>46) s += `<text class="lbl-in" x="${cx+w/2}" y="${y+rowH/2+4}" text-anchor="middle">${Math.round(100*(r.timing[k]||0)/(tot||1))}%</text>`;
+      cx += w;
+    });
+    s += `<text class="val" x="${cx+8}" y="${y+rowH/2+4}">${fmtDur(tot)}</text>`;
+  });
+  return s+`</svg>`;
+}
+
+function timeline(runs){
+  const W=900, H=88, padL=8, padR=8, top=26, barH=32;
+  const t0=Math.min(...runs.map(r=>+new Date(r.start))), t1=Math.max(...runs.map(r=>+new Date(r.end)));
+  const span=Math.max(t1-t0,1), x=t=>padL+((t-t0)/span)*(W-padL-padR);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Operation timeline">`;
+  for(let i=0;i<=6;i++){ const tv=t0+span*i/6, gx=x(tv);
+    s+=`<line class="gl" x1="${gx}" y1="${top}" x2="${gx}" y2="${top+barH+6}"/>`;
+    s+=`<text class="tick" x="${gx}" y="${top+barH+22}" text-anchor="middle">${_ist(tv).toISOString().slice(11,16)}</text>`; }
+  runs.forEach((r,i)=>{
+    const a=x(+new Date(r.start)), b=x(+new Date(r.end)), w=Math.max(b-a,2);
+    const col = i%2 ? 'var(--s1)' : 'var(--s3)';
+    s+=`<rect class="barmark" data-tip="${esc(r.program_name)}|${fmtClock(r.start)} → ${fmtClock(r.end)}|${fmtDur(r.timing.wallclock_s)}|${r.timing.cutting_pct}% cutting"
+         x="${a}" y="${top}" width="${w}" height="${barH}" rx="4" fill="${col}"/>`;
+    if(w>26) s+=`<text class="lbl-in" x="${a+w/2}" y="${top+barH/2+4}" text-anchor="middle">${r.parsed.seq_no ?? i+1}</text>`;
+  });
+  s+=`<text class="tick" x="${padL}" y="16">IST</text>`;
+  return s+`</svg>`;
+}
+
+function barChart(runs, pick, unit, fmt=(v)=>Math.round(v)){
+  const rowH=22, gap=7, padL=200, padR=70, padT=6, W=900;
+  const vals = runs.map(pick);
+  const max = Math.max(...vals.filter(v=>v!=null), 1);
+  const H = padT + runs.length*(rowH+gap);
+  const x = v => (v/max)*(W-padL-padR);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for(let i=0;i<=4;i++){ const gx=padL+x(max*i/4);
+    s+=`<line class="gl" x1="${gx}" y1="${padT}" x2="${gx}" y2="${H-4}"/>`;
+    s+=`<text class="tick" x="${gx}" y="${H}" text-anchor="middle">${fmt(max*i/4)}</text>`; }
+  s+=`<line class="bl" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-4}"/>`;
+  runs.forEach((r,i)=>{
+    const y=padT+i*(rowH+gap), v=vals[i];
+    const name = r.parsed.label && r.parsed.label!==r.program_name ? r.parsed.label : r.program_name;
+    s+=`<text class="tick" x="${padL-10}" y="${y+rowH/2+4}" text-anchor="end" fill="var(--ink)">${esc(name)}</text>`;
+    if(v==null){ s+=`<text class="tick" x="${padL+6}" y="${y+rowH/2+4}">no data</text>`; return; }
+    const w=Math.max(x(v),2);
+    s+=`<rect class="barmark" data-tip="${esc(r.program_name)}|${unit}|${fmt(v)}" x="${padL}" y="${y}" width="${w}" height="${rowH}" rx="4" fill="var(--primary)"/>`;
+    s+=`<text class="val" x="${padL+w+8}" y="${y+rowH/2+4}">${fmt(v)}</text>`;
+  });
+  return s+`</svg>`;
+}
+function legend(items){
+  return `<div class="legend">` + items.map(([l,c]) => `<span><i class="sw" style="background:${c}"></i>${esc(l)}</span>`).join('') + `</div>`;
+}
+
+/* ---------- part card ---------- */
+function partCard(p){
+  const a = p.actual, tot = p.cutting_s + p.air_s;
+  let s = `<div class="partcard">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <h3 style="margin:0;font-size:1.05rem;color:var(--ink)">${esc(p.label)}</h3>
+      <span class="dim" style="font-size:.85rem">${p.operations} operations</span>
+    </div>
+    <div class="partgrid">
+      <div><span class="k">Start${infoIcon('First telemetry sample for this part. If log coverage is below 100%, the real start may be earlier.','Start')}</span><div class="v">${fmtClock(p.start)}</div><div class="dim" style="font-size:.75rem">${fmtDate(p.start)} IST</div></div>
+      <div><span class="k">End${infoIcon('Last telemetry sample for this part. If coverage is below 100%, the real end may be later.','End')}</span><div class="v">${fmtClock(p.end)}</div><div class="dim" style="font-size:.75rem">${fmtDate(p.end)} IST</div></div>
+      <div><span class="k">Elapsed (logged)${infoIcon('elapsed','Elapsed (logged)')}</span><div class="v">${p.logged_span_h} h</div><div class="dim" style="font-size:.75rem">${fmtDur(p.logged_span_s)}</div></div>
+      <div><span class="k">Utilisation${infoIcon('utilisation','Utilisation')}</span><div class="v">${num(p.utilisation_pct,1)}%</div></div>
+      <div><span class="k">Log coverage${infoIcon('coverage','Log coverage')}</span><div class="v">${num(p.coverage_pct,1)}%</div></div>
+      <div><span class="k">Cutting ratio${infoIcon('cutting_ratio','Cutting ratio')}</span><div class="v">${tot?num(100*p.cutting_s/tot,0)+'%':'—'}</div><div class="dim" style="font-size:.75rem">of running time</div></div>
+    </div>`;
+  if(a){
+    s += `<div class="warnbox"><b>⚠ Logged window is shorter than the actual job</b>
+      <p>On the shop floor this part ran <b>${fmtClock(a.start)} → ${fmtClock(a.end)} IST</b> (${a.span_h} h).
+         Telemetry only covers <b>${p.logged_span_h} h</b> of that — <b>${num(a.logged_fraction_pct,0)}%</b>.
+         Roughly <b>${a.missing_h} h</b> of machining has no controller data at all, so every total below is a floor.</p>
+      <p>Most likely cause: the Smart Connect PC stopped publishing. The machine does not self-report — see the Data gaps tab.</p></div>`;
+  }
+  s += `<div style="margin-top:14px">
+      <span class="chip">cutting ${infoIcon('cutting','Cutting')} <b>${fmtDur(p.cutting_s)}</b></span>
+      <span class="chip">air / positioning ${infoIcon('air','Air / positioning')} <b>${fmtDur(p.air_s)}</b></span>
+      <span class="chip">stopped ${infoIcon('stopped','Stopped')} <b>${fmtDur(p.stopped_s)}</b></span>
+      <span class="chip">setup / load ${infoIcon('setup','Setup / load')} <b>${fmtDur(p.setup_idle_s)}</b></span>
+    </div>
+    <details style="margin-top:8px"><summary>Program sequence (${p.program_sequence.length})</summary>
+      <div style="margin-top:8px">${p.program_sequence.map((n,i)=>`<span class="chip">${i+1}. ${esc(n)}</span>`).join('')}</div></details>
+  </div>`;
+  return s;
+}
+
+const STATUS = {
+  ok:['Captured','var(--g-c)','✓'], misleading:['Misleading','var(--a-c)','!'],
+  sparse:['Effectively empty','var(--a-c)','~'], constant:['Never changes','var(--a-c)','='],
+  absent:['Not sent','var(--r-c)','✕'],
+};
+
+/* ---------- normalise the primary window + rolling periods to one shape ---------- */
+function views(m){
+  const out = [{
+    id:'window', label:'This report window', primary:true,
+    span_s:m.window_span_s, coverage_pct:m.uptime_coverage_pct, sample_rate_hz:m.sample_rate_hz,
+    util_pct:m.utilisation_logged_pct,
+    samples:m.samples, cutting_s:m.cutting_s, air_s:m.air_s, stopped_s:m.stopped_s,
+    manual_s:m.manual_s,
+    untracked_s:m.untracked_s, setup_s:m.setup_idle_s, alarm_pct:m.alarm_active_pct,
+    alarm_events:m.alarm_events, state:m.state_distribution,
+    setup_state:m.setup_idle_state_secs, ops:m.operations, cycles:m.cycles,
+  }];
+  (DATA.periods||[]).forEach(p => out.push({
+    id:'d'+p.days, label:p.label, primary:false,
+    span_s:p.window_span_s, coverage_pct:p.coverage_pct, sample_rate_hz:p.sample_rate_hz,
+    util_pct:p.utilisation_pct,
+    samples:p.samples, cutting_s:p.cutting_s, air_s:p.air_s, stopped_s:p.stopped_s,
+    manual_s:p.manual_s,
+    untracked_s:p.untracked_s, setup_s:null, alarm_pct:null, alarm_events:null,
+    state:p.state_distribution,
+  }));
+  return out;
+}
+
+/* grouped bar: programmed (outline) vs actual (solid) per operation, with the % delta */
+function progVsActual(runs, actualPick, progMap, unit, fmt=(v)=>Math.round(v)){
+  const rowH=26, gap=10, padL=200, padR=120, padT=6, W=900;
+  const H = padT + runs.length*(rowH+gap);
+  const rows = runs.map(r => {
+    const key = r.program_name.toLowerCase().replace(/\.(tap|nc|mpf|prg)$/,'');
+    return { name: r.parsed.label && r.parsed.label!==r.program_name ? r.parsed.label : r.program_name,
+             prog: progMap[key] ?? null, act: actualPick(r), raw: r.program_name };
+  });
+  const max = Math.max(1, ...rows.flatMap(x => [x.prog, x.act].filter(v => v!=null)));
+  const x = v => (v/max)*(W-padL-padR);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for(let i=0;i<=4;i++){ const gx=padL+x(max*i/4);
+    s+=`<line class="gl" x1="${gx}" y1="${padT}" x2="${gx}" y2="${H-4}"/>`;
+    s+=`<text class="tick" x="${gx}" y="${H}" text-anchor="middle">${fmt(max*i/4)}</text>`; }
+  s+=`<line class="bl" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-4}"/>`;
+  rows.forEach((r,i)=>{
+    const y=padT+i*(rowH+gap);
+    s+=`<text class="tick" x="${padL-10}" y="${y+rowH/2+4}" text-anchor="end" fill="var(--ink)">${esc(r.name)}</text>`;
+    const bh=(rowH-4)/2;
+    if(r.prog!=null){
+      s+=`<rect class="barmark" data-tip="${esc(r.raw)}|programmed ${unit}|${fmt(r.prog)}" x="${padL}" y="${y}" width="${Math.max(x(r.prog),2)}" height="${bh}" rx="3" fill="none" stroke="var(--primary)" stroke-width="1.5"/>`;
+    }
+    if(r.act!=null){
+      s+=`<rect class="barmark" data-tip="${esc(r.raw)}|actual ${unit}|${fmt(r.act)}" x="${padL}" y="${y+bh+4}" width="${Math.max(x(r.act),2)}" height="${bh}" rx="3" fill="var(--primary)"/>`;
+    }
+    if(r.prog!=null && r.act!=null){
+      const d = Math.round(100*(r.act-r.prog)/r.prog);
+      const col = Math.abs(d)>15 ? 'var(--r-c)' : 'var(--ink-2)';
+      s+=`<text class="val" x="${padL+Math.max(x(r.prog),x(r.act))+8}" y="${y+rowH/2+4}" fill="${col}">${fmt(r.act)} (${d>0?'+':''}${d}%)</text>`;
+    } else if(r.act!=null){
+      s+=`<text class="val" x="${padL+x(r.act)+8}" y="${y+rowH/2+4}">${fmt(r.act)}</text>`;
+    }
+  });
+  return s+`</svg>`;
+}
+
+// programmed S / F_cut per operation, from the closed-loop records (if present)
+function progMap(field){
+  const m = {};
+  ((DATA.closed_loop && DATA.closed_loop.records) || []).forEach(r => {
+    const k = (r.operation||'').toLowerCase().replace(/\.(tap|nc|mpf|prg)$/,'');
+    const v = r.programmed && r.programmed[field];
+    if(v!=null) m[k] = v;
+  });
+  return m;
+}
+
+/* ---------- sections ---------- */
+function summaryTab(v, runs){
+  const tot = v.cutting_s + v.air_s;
+  const covHint = `${fmtDur(v.span_s - v.untracked_s)} sampled · everything but untracked`
+    + (v.sample_rate_hz ? ` · avg ${num(1/v.sample_rate_hz,1)} s/sample` : '');
+  let h = `<div class="grid">
+    ${tile('clock','#7c3aed','#f3e8ff','Window','window', fmtDur(v.span_s), v.primary ? ((v.ops ?? runs.length)+' operations') : v.samples.toLocaleString()+' samples')}
+    ${tile('gapdash','#0891b2','#e0f7fa','Log coverage','coverage', v.coverage_pct==null?'—':num(v.coverage_pct,1)+'%', covHint)}
+    ${tile('gauge','#2563eb','#e0edff','Utilisation','utilisation', v.util_pct==null?'—':num(v.util_pct,1)+'%', `${fmtDur(tot)} running of ${fmtDur(v.span_s)} logged`)}
+    ${tile('cut','#16A34A','#DCFCE7','Cutting','cutting', fmtDur(v.cutting_s), (tot?num(100*v.cutting_s/tot,0):'—')+'% of running time')}
+    ${tile('arrows','#0d9488','#ccfbf1','Air / positioning','air', fmtDur(v.air_s), (tot?num(100*v.air_s/tot,0):'—')+'% of running time')}
+    ${tile('pause','#D97706','#FEF3C7','Stopped','stopped', fmtDur(v.stopped_s), 'feed-hold / M00 / reset — not counting time the operator was jogging (next tile)')}
+    ${tile('hand','#4F46E5','#E0E7FF','Manual / MDI','manual', fmtDur(v.manual_s), 'operator jogging / hand-feeding — not counted as cutting')}
+    ${v.primary ? tile('wrench','#64748b','#f1f5f9','Setup / load','setup', fmtDur(v.setup_s), 'program loaded, cycle not started') : ''}
+    ${v.primary && v.alarm_pct!=null ? tile('bell','#DC2626','#FEE2E2','Alarm flag','alarm', num(v.alarm_pct,1)+'%', v.alarm_events+' transitions · unconfirmed') : ''}
+  </div>`;
+
+  const ss = v.primary ? (v.setup_state || {}) : {};
+  if(Object.keys(ss).length){
+    const tsec = Object.values(ss).reduce((a,b)=>a+b,0) || 1;
+    const nm = {'0':'reset','1':'running','2':'feed-hold / stop','3':'running'};
+    h += `<div class="card" style="padding:1rem 1.4rem"><h3 style="margin:0">Machine state during setup / load
+        ${infoIcon('During the program-loaded-but-not-started gaps between operations, the collector barely samples — so this is a thin read. It shows what state the few samples that exist were in.','State during setup / load')}</h3>
+      <div style="margin-top:10px">`
+      + Object.entries(ss).sort().map(([k,vv])=>`<span class="chip">${k} = ${nm[k]||'?'} <b>${Math.round(100*vv/tsec)}%</b></span>`).join('')
+      + `<span class="dim" style="font-size:.78rem;margin-left:6px">(collector barely samples during setup — thin data)</span></div></div>`;
+  }
+
+  if(v.primary && DATA.insights.length){
+    h += `<div class="card"><h3>What stands out</h3><ul class="ins">`
+       + DATA.insights.map(i=>`<li>${esc(i.text)}</li>`).join('') + `</ul></div>`;
+  }
+  h += `<p class="lead" style="margin:.6rem 0 0">Per-operation detail, the time-breakdown chart,
+    timeline and the CAM-vs-actual-vs-QC closed loop are under <b>Part by part</b>.</p>`;
+  return h;
+}
+
+/* the per-part analytical block — everything that used to be split across Summary + Operations */
+function partDetail(pRuns){
+  let h = `<div class="card"><h3>Where each operation's time went
+        ${infoIcon('Each bar is one operation, split into cutting / air-positioning / stopped. Hover each segment.','Time breakdown')}</h3>`
+     + legend([['Cutting','var(--s1)'],['Air / positioning','var(--s3)'],['Stopped','var(--s2)']])
+     + `<div class="scroll">${stackedTime(pRuns)}</div>
+        <p class="lead" style="margin:12px 0 0">
+        <b>Cutting</b> — running and <code>cutting_time</code> advancing. <b>Air / positioning</b> — running
+        but <code>cutting_time</code> frozen (rapids, tool changes, spindle ramp, same-second samples).
+        <b>Stopped</b> — <code>machine_state</code> is feed-hold / stop / reset.</p></div>`;
+
+  h += `<div class="card"><h3>Operation timeline
+        ${infoIcon('Wall-clock position of each operation. Number in each bar is the operation sequence.','Timeline')}</h3>
+        <div class="scroll">${timeline(pRuns)}</div></div>`;
+
+  if(DATA.closed_loop) h += closedLoopSection();
+
+  h += `<div class="card"><h3>Per-operation detail</h3><div class="scroll"><table>
+    <thead><tr><th>Operation${infoIcon('operations','Operation')}</th><th>Tool</th><th>Start</th>
+    <th>Cyc${infoIcon('cycles','Cycles')}</th><th>Setup${infoIcon('setup','Setup / load')}</th>
+    <th>Wall${infoIcon('wall','Wall')}</th><th>Cutting${infoIcon('cutting','Cutting')}</th>
+    <th>Cut %${infoIcon('cutting_ratio','Cut %')}</th><th>Air %${infoIcon('air','Air / positioning')}</th>
+    <th>Stopped${infoIcon('stopped','Stopped')}</th>
+    <th>Manual${infoIcon('manual','Manual / MDI')}</th>
+    <th>RPM med${infoIcon('rpm_median','Median RPM')}</th><th>Feed med${infoIcon('feed_median','Median feed')}</th>
+    <th>Feed ovr${infoIcon('The feed-override dial the operator actually used, as a % of the programmed feed. "flat" means they set it once and left it there; a range means they adjusted it as they went. Blank means this machine wasn\'t reporting that dial yet during this job.','Feed override')}</th>
+    <th>Load max${infoIcon('load_max','Load max')}</th><th>Alarm %${infoIcon('alarm','Alarm')}</th>
+    <th>Alarm ev${infoIcon('How many times the machine\'s alarm flag switched on during this operation. This controller raises it very easily, so a high count is a reason to take a closer look, not proof something is wrong.','Alarm events')}</th></tr></thead><tbody>`
+    + pRuns.map(r=>`<tr>
+        <td>${esc(r.program_name)}</td>
+        <td class="dim">${esc(r.parsed.label!==r.program_name?r.parsed.label:'—')}</td>
+        <td class="mono">${fmtClock(r.start)}</td>
+        <td class="mono">${r.cycles ?? 1}</td>
+        <td class="mono">${fmtDur(r.timing.idle_before_s)}</td>
+        <td class="mono">${fmtDur(r.timing.wallclock_s)}</td>
+        <td class="mono">${fmtDur(r.timing.cutting_s)}</td>
+        <td class="mono">${num(r.timing.cutting_pct,0)}</td>
+        <td class="mono">${num(r.timing.air_pct,0)}</td>
+        <td class="mono">${fmtDur(r.timing.stopped_s)}</td>
+        <td class="mono">${fmtDur(r.timing.manual_s)}</td>
+        <td class="mono">${num(r.spindle.rpm_median,0)}</td>
+        <td class="mono">${num(r.feed.rate_median,0)}</td>
+        <td class="mono">${ovrCell(r.feed.override)}</td>
+        <td class="mono dim">${num(r.spindle.load_max,0)}</td>
+        <td class="mono">${num(r.alarms.active_pct,1)}</td>
+        <td class="mono">${r.alarms.events ?? 0}</td></tr>`).join('')
+    + `</tbody></table></div>`;
+
+  const repeats = pRuns.filter(r => (r.cycles||0) > 1);
+  if(repeats.length){
+    h += `<details style="margin-top:8px"><summary>Repeat cycles — run-to-run consistency (${repeats.length} program(s))</summary>
+      <div class="scroll" style="margin-top:10px"><table>
+      <thead><tr><th>Operation</th><th>Cycle</th><th>Start</th><th>Cycle time</th><th>Cutting</th><th>Air</th><th>Stopped</th><th>RPM med</th><th>Feed med</th></tr></thead><tbody>`
+      + repeats.flatMap(r => (r.cycle_detail||[]).map((c,i)=>`<tr>
+          <td>${i===0?esc(r.program_name):''}</td><td class="mono">${i+1}</td><td class="mono">${fmtClock(c.start)}</td>
+          <td class="mono">${fmtDur(c.cycle_time_s)}</td><td class="mono">${fmtDur(c.cutting_s)}</td>
+          <td class="mono">${fmtDur(c.air_s)}</td><td class="mono">${fmtDur(c.stopped_s)}</td>
+          <td class="mono">${num(c.rpm_median,0)}</td><td class="mono">${num(c.feed_median,0)}</td></tr>`)).join('')
+      + `</tbody></table></div></details>`;
+  }
+  return h + `</div>`;
+}
+
+function partsTab(runs){
+  const parts = DATA.parts || [];
+  if(!parts.length) return `<div class="card">No parts inferred in this window.</div>`;
+  let h = `<p class="lead">A part is inferred as a cluster of operations with no gap longer than
+    ${DATA.config.part_gap_hours ?? 2} h. The controller's <code>production_count</code> can't be used —
+    it counts program completions, not parts.</p>`;
+  parts.forEach(p => {
+    const idx = new Set(p.operation_indexes || []);
+    const pRuns = runs.filter(r => idx.has(r.index));
+    h += partCard(p);
+    if(pRuns.length) h += partDetail(pRuns);
+  });
+  return h;
+}
+
+function gapsTab(){
+  const health = DATA.field_health, bad = health.filter(f=>f.status!=='ok'), ok = health.filter(f=>f.status==='ok');
+  let h = `<p class="lead">Every field the controller is expected to publish, checked against the actual
+    samples in this window. These are the gaps to close — on this machine, or by specifying them up front
+    on the next one. <b>${bad.length} of ${health.length}</b> fields are unusable today.</p>`;
+  h += bad.map(f=>{
+    const [label,col,icon] = STATUS[f.status] || STATUS.absent;
+    return `<div class="gap ${f.status}"><header>
+        <code>${esc(f.field)}</code>
+        <span class="pill" style="color:${col};background:${col==='var(--r-c)'?'var(--r-bg)':col==='var(--a-c)'?'var(--a-bg)':'var(--g-bg)'}"><i class="dot" style="background:${col}"></i>${icon} ${label}</span>
+        <span class="dim" style="font-size:.8rem">${f.coverage_pct}% of samples carry it</span>
+      </header>
+      <p>${esc(f.detail)}</p>
+      ${f.why_it_matters?`<p><span class="lbl">Costs us</span>${esc(f.why_it_matters)}</p>`:''}
+      ${f.how_to_fix?`<p><span class="lbl">Fix</span>${esc(f.how_to_fix)}</p>`:''}
+    </div>`;
+  }).join('');
+  if(DATA.config.override_is_proxy){
+    h += `<div class="gap misleading"><header><span class="pill" style="color:var(--a-c);background:var(--a-bg)"><i class="dot" style="background:var(--a-c)"></i>! Proxy in use</span></header>
+      <p>Feed-override metrics are computed from <code>${esc(DATA.config.override_field)}</code>, not
+      <code>feed_override</code>. Swap back with <code>--override-field feed_override</code> once the register is published.</p></div>`;
+  }
+  h += `<details><summary>Fields that are working (${ok.length})</summary>
+    <div class="card" style="margin-top:10px"><div class="scroll"><table>
+    <thead><tr><th>Field</th><th>Coverage</th><th>Detail</th></tr></thead><tbody>`
+    + ok.map(f=>`<tr><td><code>${esc(f.field)}</code></td><td class="mono">${f.coverage_pct}%</td>
+        <td style="text-align:left" class="dim">${esc(f.detail)}</td></tr>`).join('')
+    + `</tbody></table></div></div></details>`;
+  return h;
+}
+
+/* ---------- filter panel + tabs ---------- */
+function filterPanel(m, VS){
+  return `<div class="filters">
+    <div class="fh">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><path d="M3 4h18l-7 8v6l-4 2v-8Z"/></svg>
+      Filters
+    </div>
+    <div class="frow">
+      <div class="fld"><label>Machine</label>
+        <select class="control" disabled><option>${esc(DATA.source.factory_id)} — ${esc(DATA.source.machine_id)}</option></select></div>
+      <div class="fld"><label>Date range</label>
+        <select class="control" id="rangeSel">${VS.map(v=>`<option value="${v.id}">${esc(v.label)}</option>`).join('')}</select></div>
+      <div class="fld"><label>Window start (IST)</label>
+        <input class="control" disabled value="${fmtDT(m.window_start)}"></div>
+      <div class="fld"><label>Window end (IST)</label>
+        <input class="control" disabled value="${fmtDT(m.window_end)}"></div>
+    </div>
+    <p class="note">The date range changes the <b>Summary</b> tab. Part-by-part / Operations / Data gaps
+      stay on the analysed window (${fmtDate(m.window_start)}, ${m.samples.toLocaleString()} samples,
+      ${m.operations} operations). Re-run <code>krishna_metrics.py</code> with <code>--start/--end</code>
+      to analyse a different window. Generated ${fmtDT(DATA.generated_at)} IST.</p>
+  </div>`;
+}
+
+/* ---------- closed-loop section (CAM → telemetry → QC), shown inside Part by part ---------- */
+function closedLoopSection(){
+  const cl = DATA.closed_loop;
+  if(!cl) return '';
+  const s = cl.summary, recs = cl.records || [];
+  const oc = {PASS:['var(--g-c)','var(--g-bg)'], FAIL:['var(--r-c)','var(--r-bg)'],
+              unmeasured:['var(--a-c)','var(--a-bg)'], unmapped:['#94a3b8','#f1f5f9']};
+  let h = `<div class="card" style="background:#f7f9fc"><h3 style="margin:0">Closed loop — CAM plan vs machine actual vs QC
+      ${infoIcon('Each CAM .tap toolpath joined to the telemetry operation that ran it and to the QC dimensions it produced. Every row is appended to shop_knowledge.jsonl — the shop parameter knowledge base.','Closed loop')}</h3></div>
+    <div class="grid">
+    ${tile('gauge','#2563eb','#e0edff','Part outcome','From the linked QC dimensions. "incomplete" = some dimensions not yet mapped to an operation.', esc(s.part_outcome), s.qc_in_tolerance+' dims in tolerance')}
+    ${tile('wave','#7c3aed','#f3e8ff','Operations','Every CAM toolpath for this part. Those that ran outside the analysed telemetry window have no actual data.', s.operations_total, s.operations_with_telemetry+' with telemetry · '+s.operations_off_window+' off-window')}
+    ${tile('bell','#DC2626','#FEE2E2','Flagged','Operations with a deviation worth a look — feed/RPM off programmed, an alarm, extra cycles, a QC fail, or no telemetry.', s.operations_flagged, s.operations_failed+' failed QC')}
+    ${tile('gapdash','#0891b2','#e0f7fa','Knowledge base','Total labelled operation records accumulated across all parts so far (shop_knowledge.jsonl).', (cl.knowledge_count||0).toLocaleString(), 'records — the flywheel')}
+  </div>`;
+
+  if(s.operations_qc_mapped === 0){
+    h += `<div class="warnbox"><b>QC not linked yet — every row below shows “unmapped”</b>
+      <p>The inspection report has ${s.qc_dimensions} measured dimensions, all in tolerance, but nothing
+      yet says <i>which operation cut which dimension</i>, so no operation can be graded PASS / FAIL.</p>
+      <p><b>To map it:</b> open <code>operation_qc_map.json</code> in the part folder. Its
+      <code>_operations</code> block lists what each toolpath makes (feature, tool, strategy, XYZ extent);
+      its <code>_qc_dimensions</code> block lists each SL number with its nominal and measured value.
+      For every SL dimension, decide from the drawing which operation produces that face/feature and add
+      the SL number to that operation’s list. Re-run <code>closed_loop.py</code> — each mapped operation
+      then gets PASS / FAIL from its linked dimensions (mapped-but-not-measured shows “unmeasured”).</p></div>`;
+  }
+
+  const unm = cl.unmatched_telemetry_ops || [];
+  if(unm.length){
+    h += `<div class="warnbox"><b>${unm.length} machine run${unm.length>1?'s':''} with no matching CAM file — not in the table below</b>
+      <p>The controller ran ${unm.length===1?'a program':'programs'} named
+      ${unm.map(u=>`<code>${esc(u.program_name)}</code>`).join(', ')} that don't match any
+      <code>.tap</code> file in this part's CAM folder — real, logged machine time
+      (${unm.map(u=>fmtDur(u.cutting_s)).join(', ')} of cutting) that this report currently can't
+      attribute to anything. Could be a duplicate/renamed save on the machine, an aborted attempt,
+      or a CAM file missing from this folder — worth checking on the shop floor.</p></div>`;
+  }
+
+  // same order as the Per-operation detail table: run order first, off-window ops after (by file)
+  const ordered = recs.slice().sort((x,y)=>{
+    const rx = x.actual && x.actual.run_order, ry = y.actual && y.actual.run_order;
+    if(rx!=null && ry!=null) return rx-ry;
+    if(rx!=null) return -1;
+    if(ry!=null) return 1;
+    return String(x.cam_file||x.operation).localeCompare(String(y.cam_file||y.operation));
+  });
+
+  h += `<div class="card"><h3>CAM programmed vs machine actual vs QC</h3><div class="scroll"><table>
+    <thead><tr><th>Operation</th><th>Feature</th><th>Tool</th>
+    <th>S prog</th><th>S act</th><th>ΔS</th>
+    <th>F prog</th><th>F act</th><th>ΔF</th>
+    <th>Cut est</th><th>Cut act</th><th>ΔCut${infoIcon('How the actual cutting time compares to our estimate from the CAM program. A big gap here usually just means the operator changed the feed, or the job got paused partway through.','Cut-time deviation')}</th><th>QC</th></tr></thead><tbody>`
+    + ordered.map(r=>{
+        const p=r.programmed, a=r.actual||{}, d=r.deltas||{}, q=r.qc||{};
+        const [c,bg]=oc[q.outcome]||oc.unmapped;
+        const dS = d.rpm_pct!=null?`${d.rpm_pct>0?'+':''}${d.rpm_pct}%`:'—';
+        const dF = d.feed_pct!=null?`${d.feed_pct>0?'+':''}${d.feed_pct}%`:'—';
+        const dC = d.cutting_vs_est_pct!=null?`${d.cutting_vs_est_pct>0?'+':''}${d.cutting_vs_est_pct}%`:'—';
+        return `<tr>
+          <td>${esc(r.operation)}</td>
+          <td class="dim">${esc(r.feature||'—')}</td>
+          <td class="dim">${r.tool&&r.tool.dia_mm?('Ø'+r.tool.dia_mm+' '+(r.tool.type||'')):'—'}</td>
+          <td class="mono">${p.S??'—'}</td><td class="mono">${a.rpm_median??'—'}</td>
+          <td class="mono" style="${d.rpm_pct!=null&&Math.abs(d.rpm_pct)>15?'color:var(--r-c);font-weight:700':''}">${dS}</td>
+          <td class="mono">${p.F_cut??'—'}</td><td class="mono">${a.feed_median??'—'}</td>
+          <td class="mono" style="${d.feed_pct!=null&&Math.abs(d.feed_pct)>15?'color:var(--r-c);font-weight:700':''}">${dF}</td>
+          <td class="mono dim">${p.est_cut_s?fmtDur(p.est_cut_s):(p.est_drill_s?fmtDur(p.est_drill_s):'—')}</td>
+          <td class="mono">${a.cutting_s!=null?fmtDur(a.cutting_s):'—'}</td>
+          <td class="mono" style="${d.cutting_vs_est_pct!=null&&Math.abs(d.cutting_vs_est_pct)>25?'color:var(--r-c);font-weight:700':''}">${dC}</td>
+          <td><span class="pill" style="color:${c};background:${bg}">${esc(q.outcome||'—')}${q.worst_dev_mm!=null?` ${q.worst_dev_mm>0?'+':''}${q.worst_dev_mm}`:''}</span></td>
+        </tr>`;
+      }).join('')
+    + `</tbody></table></div>
+    <p class="lead" style="margin:12px 0 0"><b>S/F prog</b> = spindle speed / cutting feed from the
+    <code>.tap</code> header + moves. <b>act</b> = median from telemetry while cutting. <b>Cut est</b>
+    = CAM path length ÷ programmed feed (Krishna <code>.tap</code>s carry no time estimate);
+    <b>ΔCut</b> = actual cutting time against it. Cycle count and alarm count are in the
+    Per-operation detail table below. <b>QC</b> = worst linked dimension. Every row is appended to the
+    shop knowledge base.</p></div>`;
+
+  // detail per op with QC dims
+  const withQc = recs.filter(r => (r.qc.results||[]).length);
+  if(withQc.length){
+    h += `<div class="card"><h3>Linked QC dimensions</h3><div class="scroll"><table>
+      <thead><tr><th>Operation</th><th>SL</th><th>Description</th><th>Nominal</th><th>Tol</th>
+      <th>Measured</th><th>Dev</th><th>Result</th></tr></thead><tbody>`
+      + withQc.flatMap(r => r.qc.results.map((q,i)=>`<tr>
+          <td>${i===0?esc(r.operation):''}</td>
+          <td class="mono">${q.sl}</td>
+          <td style="text-align:left">${esc(q.description||'')}</td>
+          <td class="mono">${q.nominal??'—'}</td>
+          <td class="mono dim">+${q.tol_plus??'?'} / −${q.tol_minus??'?'}</td>
+          <td class="mono">${q.measured?q.measured.join(' / '):'—'}</td>
+          <td class="mono">${q.dev_mm!=null?(q.dev_mm>0?'+':'')+q.dev_mm:'—'}</td>
+          <td>${q.pass==null?'<span class="dim">—</span>':(q.pass?'<span class="pill" style="color:var(--g-c);background:var(--g-bg)">OK</span>':'<span class="pill" style="color:var(--r-c);background:var(--r-bg)">FAIL</span>')}</td>
+        </tr>`)).join('')
+      + `</tbody></table></div></div>`;
+  }
+  return h;
+}
+
+/* ================= Inputs tab — fill the on-ground data in-page ================= */
+function _numOrNull(v){ if(v===''||v==null) return null; const n = +v; return isNaN(n)?v:n; }
+/* the form shows machining windows in IST; the file stores UTC (it feeds InfluxDB) */
+function utcToIstField(iso){
+  if(!iso) return '';
+  const d = new Date(iso); if(isNaN(d)) return String(iso);
+  const t = new Date(d.getTime() + IST_MS), p = n => String(n).padStart(2,'0');
+  return `${t.getUTCFullYear()}-${p(t.getUTCMonth()+1)}-${p(t.getUTCDate())} ${p(t.getUTCHours())}:${p(t.getUTCMinutes())}`;
+}
+function istFieldToUtc(s){
+  if(!s) return '';
+  const m = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  if(!m) return String(s);
+  return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5]) - IST_MS).toISOString().replace('.000Z','Z');
+}
+function inputsKey(){ return 'krishna_inputs_' + ((DATA.closed_loop&&DATA.closed_loop.inputs&&DATA.closed_loop.inputs.part)||'part'); }
+
+function seedInputs(){
+  const cl = DATA.closed_loop||{}, inp = cl.inputs||{}, job = inp.job||{};
+  const M = { quantity: job.quantity ?? 1,
+              runs: (job.runs||[]).map(r=>({start:utcToIstField(r.start), end:utcToIstField(r.end), note:r.note||''})),
+              setups:{}, operations:{}, outcome:{} };
+  if(!M.runs.length) M.runs = [{start:'',end:'',note:''}];
+  (cl.setups||[]).forEach(s=>{
+    const wh = s.workholding||{}, st = s.stock_actual_mm||{};
+    M.setups[s.cam_workplane] = { orientation:s.orientation||'', wh_type:wh.type||'', wh_detail:wh.detail||'',
+      datum:wh.datum_touched_off||'', gcode_offset:wh.gcode_offset||'G54',
+      stock_x:st.x??'', stock_y:st.y??'', stock_z:st.z??'', notes:s.notes||'' };
+  });
+  const oa = job.operation_actuals||{};
+  (inp.operations||[]).forEach(o=>{
+    const a = oa[o.name]||{};
+    M.operations[o.name] = { qc:(inp.qc_map&&inp.qc_map[o.name])||[],
+      tool_substituted:a.tool_substituted||'', notes:a.notes||'', outcome:a.outcome||'ok' };
+  });
+  const oc = job.outcome||{};
+  M.outcome = { parts_good:oc.parts_good??'', parts_scrap:oc.parts_scrap??'', rework:oc.rework||'', notes:oc.notes||'' };
+  return M;
+}
+function loadInputs(){
+  try{ const d = JSON.parse(localStorage.getItem(inputsKey())); if(d && d.setups) return d; }catch(e){}
+  return seedInputs();
+}
+function saveInputs(M){ try{ localStorage.setItem(inputsKey(), JSON.stringify(M)); }catch(e){} }
+
+function collectInputs(){
+  const root = document.querySelector('.tabpanel[data-panel="inputs"]');
+  const M = { quantity:null, runs:[], setups:{}, operations:{}, outcome:{} };
+  if(!root) return M;
+  const qv = root.querySelector('[data-k="quantity"]'); M.quantity = qv&&qv.value!=='' ? +qv.value : null;
+  root.querySelectorAll('[data-run]').forEach(row=>{
+    const g = k => { const el = row.querySelector(`[data-rk="${k}"]`); return el?el.value.trim():''; };
+    if(g('start')||g('end')||g('note')) M.runs.push({start:g('start'),end:g('end'),note:g('note')});
+  });
+  if(!M.runs.length) M.runs = [{start:'',end:'',note:''}];
+  root.querySelectorAll('[data-setup]').forEach(b=>{
+    const g = k => { const el = b.querySelector(`[data-sk="${k}"]`); return el?el.value.trim():''; };
+    M.setups[b.getAttribute('data-setup')] = { orientation:g('orientation'), wh_type:g('wh_type'),
+      wh_detail:g('wh_detail'), datum:g('datum'), gcode_offset:g('gcode_offset'),
+      stock_x:g('stock_x'), stock_y:g('stock_y'), stock_z:g('stock_z'), notes:g('notes') };
+  });
+  root.querySelectorAll('[data-op]').forEach(r=>{
+    const g = k => { const el = r.querySelector(`[data-ok="${k}"]`); return el?el.value.trim():''; };
+    const qc = [...r.querySelectorAll('.qcchip.on')].map(c=>+c.getAttribute('data-sl')).sort((a,b)=>a-b);
+    M.operations[r.getAttribute('data-op')] = { qc, tool_substituted:g('tool_substituted'),
+      notes:g('notes'), outcome:g('outcome')||'ok' };
+  });
+  const og = k => { const el = root.querySelector(`[data-ock="${k}"]`); return el?el.value.trim():''; };
+  M.outcome = { parts_good:og('parts_good'), parts_scrap:og('parts_scrap'), rework:og('rework'), notes:og('notes') };
+  return M;
+}
+
+function buildJobJson(M){
+  const cl = DATA.closed_loop, inp = cl.inputs, rec = (cl.records||[])[0]||{};
+  const setups = (cl.setups||[]).map(s=>{
+    const m = M.setups[s.cam_workplane]||{};
+    return { id:s.id||('WP'+s.cam_workplane), cam_workplane:s.cam_workplane, operations:s.operations||[],
+      orientation:m.orientation||'',
+      workholding:{ type:m.wh_type||'', detail:m.wh_detail||'', datum_touched_off:m.datum||'',
+                    gcode_offset:m.gcode_offset||'G54' },
+      stock_actual_mm:{ x:_numOrNull(m.stock_x), y:_numOrNull(m.stock_y), z:_numOrNull(m.stock_z) },
+      notes:m.notes||'' };
+  });
+  const oa = {};
+  Object.entries(M.operations).forEach(([op,v])=>{
+    if(v.tool_substituted||v.notes||(v.outcome&&v.outcome!=='ok'))
+      oa[op] = { tool_substituted:v.tool_substituted||'', notes:v.notes||'', outcome:v.outcome||'ok' };
+  });
+  const j = {
+    _README:"Filled from the report's Inputs tab. Put this file in the part folder and re-run closed_loop.py.",
+    part:inp.part, part_name:rec.part_name||inp.part, quantity:M.quantity,
+    material:rec.material||null, machine:DATA.source.machine_id, factory:DATA.source.factory_id,
+    runs:M.runs.filter(r=>r.start||r.end||r.note)
+       .map(r=>({start:istFieldToUtc(r.start), end:istFieldToUtc(r.end), note:r.note||''})),
+    setups, outcome:{ parts_good:_numOrNull(M.outcome.parts_good),
+      parts_scrap:_numOrNull(M.outcome.parts_scrap)||0, rework:M.outcome.rework||'', notes:M.outcome.notes||'' }
+  };
+  if(Object.keys(oa).length) j.operation_actuals = oa;
+  return j;
+}
+function buildQcMap(M){
+  const inp = DATA.closed_loop.inputs;
+  const out = {
+    _README:"Filled from the report's Inputs tab. Put this file in the part folder and re-run closed_loop.py.",
+    _operations:Object.fromEntries((inp.operations||[]).map(o=>[o.name,
+        (o.feature||'?') + (o.workplane?` | WP${o.workplane}`:'')])),
+    _qc_dimensions:Object.fromEntries((inp.qc_dims||[]).map(d=>[String(d.sl),
+        `${d.description} — measured ${d.measured?('['+d.measured.join(', ')+']'):'?'}`])),
+    _example:{ "<operation name>":[1,4] }
+  };
+  (inp.operations||[]).forEach(o=>{ out[o.name] = (M.operations[o.name]&&M.operations[o.name].qc)||[]; });
+  return out;
+}
+function downloadJSON(name, obj){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+}
+
+function inputsTab(){
+  const cl = DATA.closed_loop||{}, inp = cl.inputs;
+  if(!inp) return `<div class="card">Run <code>closed_loop.py</code> once (with the CAM folder + inspection
+    xlsx in the part directory) and this form will pre-fill.</div>`;
+  const M = loadInputs();
+  const dims = inp.qc_dims||[], ops = inp.operations||[];
+  const dimLabel = d => `${d.description}${d.tol_plus!=null?`  +${d.tol_plus}/-${d.tol_minus}`:''}${d.measured?`  measured [${d.measured.join(', ')}]`:''}`;
+
+  let h = `<p class="lead">Fill in what only the setter / operator knows — the CAM plan and the telemetry
+    are already loaded. Nothing here is mandatory. <b>There is no submit button</b> — your entries save in
+    this browser as you type <span class="saved" id="inpSaved">·</span></p>
+    <div class="card" style="background:#f7f9fc">
+      <b>How this connects the loop</b>
+      <p class="lead" style="margin:.4rem 0 0">1 · fill the fields below &nbsp; 2 · use the
+      <b>Download</b> buttons (here or at the bottom) to save <code>job.json</code> and
+      <code>operation_qc_map.json</code> &nbsp; 3 · put both files in the part folder
+      (<code>${esc(inp.part)}</code>), beside the CAM and inspection folders &nbsp; 4 · re-run
+      <code>closed_loop.py "&lt;part folder&gt;"</code>. The report then shows the workholding, the real
+      run window, per-operation QC PASS/FAIL, and the part outcome.</p>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" data-act="dl-job">⬇ Download job.json</button>
+        <button class="btn" data-act="dl-qc">⬇ Download operation_qc_map.json</button>
+        <button class="btn sec" id="inpClear">Reset form</button>
+      </div>
+    </div>`;
+
+  // ---- Job ----
+  h += `<div class="card"><h3>Job</h3>
+    <div class="fgrid">
+      <div><label>Quantity of parts</label>
+        <input class="inp" type="number" min="1" data-k="quantity" value="${M.quantity??''}"></div>
+    </div>
+    <label style="font-size:.76rem;color:var(--ink-2);font-weight:600;margin-top:8px;display:block">
+      Machining window(s) — shop-floor time (IST), <code>YYYY-MM-DD HH:MM</code>. Add a row per session/day.</label>`;
+  M.runs.forEach((r,i)=>{
+    h += `<div class="fgrid" data-run="${i}" style="grid-template-columns:1fr 1fr 1.4fr">
+      <div><label>Start (IST)</label><input class="inp" data-rk="start" value="${esc(r.start||'')}" placeholder="2026-09-04 09:00"></div>
+      <div><label>End (IST)</label><input class="inp" data-rk="end" value="${esc(r.end||'')}" placeholder="2026-09-04 19:00"></div>
+      <div><label>Note</label><input class="inp" data-rk="note" value="${esc(r.note||'')}"></div>
+    </div>`;
+  });
+  h += `<button class="btn sec" id="addRun" style="margin-top:8px">+ another window</button></div>`;
+
+  // ---- Setups ----
+  h += `<div class="card"><h3>Setups &amp; workholding
+    ${infoIcon('Each block is one datum the part was set up against on the machine. Which operations used it and how the part sits in it come straight from the CAM file; how it was actually clamped is filled in once that\'s recorded.','Setups')}</h3>`;
+  (cl.setups||[]).forEach(s=>{
+    const m = M.setups[s.cam_workplane]||{};
+    const sel = (v,opts) => opts.map(o=>`<option${(v===o||(!v&&o===opts[0]))?' selected':''}>${o}</option>`).join('');
+    h += `<div class="setupblk" data-setup="${esc(String(s.cam_workplane))}">
+      <div style="font-weight:600">${esc(s.id||('Workplane '+s.cam_workplane))}
+        <span class="dim" style="font-weight:400">· CAM workplane ${esc(String(s.cam_workplane))} ·
+        ${(s.operations||[]).length} operations: ${(s.operations||[]).map(esc).join(', ')}</span></div>
+      <div class="fgrid">
+        <div><label>Orientation (which face up)</label>
+          <input class="inp" data-sk="orientation" value="${esc(m.orientation||'')}" placeholder="e.g. top face up, part as drawn"></div>
+        <div><label>Workholding type</label>
+          <select class="inp" data-sk="wh_type">${sel(m.wh_type, ['','vise','step-jaw vise','soft jaws','fixture plate','vacuum','tabs','angle plate','other'])}</select></div>
+        <div><label>G-code offset</label>
+          <select class="inp" data-sk="gcode_offset">${sel(m.gcode_offset||'G54', ['G54','G55','G56','G57','G58','G59'])}</select></div>
+      </div>
+      <div class="fgrid wide">
+        <div><label>Workholding detail</label>
+          <input class="inp" data-sk="wh_detail" value="${esc(m.wh_detail||'')}" placeholder='e.g. 6" vise on 20mm parallels, gripping the 78mm ends, clamps clear of the profile'></div>
+        <div><label>Datum touched off</label>
+          <input class="inp" data-sk="datum" value="${esc(m.datum||'')}" placeholder="e.g. centre-top with edge finder, Z on the top face"></div>
+      </div>
+      <div class="fgrid" style="grid-template-columns:repeat(3,1fr) 2fr">
+        <div><label>Stock X (mm)</label><input class="inp" type="number" step="any" data-sk="stock_x" value="${m.stock_x??''}"></div>
+        <div><label>Stock Y (mm)</label><input class="inp" type="number" step="any" data-sk="stock_y" value="${m.stock_y??''}"></div>
+        <div><label>Stock Z (mm)</label><input class="inp" type="number" step="any" data-sk="stock_z" value="${m.stock_z??''}"></div>
+        <div><label>Setup notes</label><input class="inp" data-sk="notes" value="${esc(m.notes||'')}"></div>
+      </div>
+    </div>`;
+  });
+  h += `</div>`;
+
+  // ---- QC dimension legend ----
+  if(dims.length){
+    h += `<div class="card"><h3>Inspected dimensions (${dims.length})</h3>
+      <p class="lead">Reference only. Below, tag each operation with the SL numbers of the dimensions it produces.</p>
+      <div class="scroll"><table><thead><tr><th>SL</th><th>Description</th><th>Nominal</th><th>Tol</th><th>Measured</th></tr></thead><tbody>`
+      + dims.map(d=>`<tr><td class="mono">${d.sl}</td><td style="text-align:left">${esc(d.description||'')}</td>
+          <td class="mono">${d.nominal??'—'}</td>
+          <td class="mono dim">${d.tol_plus!=null?`+${d.tol_plus}/-${d.tol_minus}`:'—'}</td>
+          <td class="mono">${d.measured?d.measured.join(' / '):'—'}</td></tr>`).join('')
+      + `</tbody></table></div></div>`;
+  }
+
+  // ---- Per operation ----
+  h += `<div class="card"><h3>Per operation — QC mapping &amp; shop-floor notes</h3>
+    <p class="lead">Click the SL numbers each operation is responsible for. Add a tool substitution or note
+    if anything differed from the program.</p>`;
+  ops.forEach(o=>{
+    const m = M.operations[o.name]||{qc:[]};
+    const on = new Set(m.qc||[]);
+    h += `<div class="setupblk" data-op="${esc(o.name)}">
+      <div style="font-weight:600">${esc(o.name)}
+        <span class="dim" style="font-weight:400">— ${esc(o.feature||'?')}${o.workplane?` · WP${esc(String(o.workplane))}`:''}${o.run_order?` · ran #${o.run_order}`:' · off-window'}</span></div>
+      <div style="margin:8px 0 4px">`
+      + dims.map(d=>`<span class="qcchip${on.has(d.sl)?' on':''}" data-sl="${d.sl}" title="${esc(dimLabel(d))}">${d.sl}</span>`).join('')
+      + `</div>
+      <div class="fgrid" style="grid-template-columns:1fr 2fr 160px">
+        <div><label>Tool substituted?</label><input class="inp" data-ok="tool_substituted" value="${esc(m.tool_substituted||'')}" placeholder="e.g. used Ø3.0, Ø3.2 chipped"></div>
+        <div><label>Note</label><input class="inp" data-ok="notes" value="${esc(m.notes||'')}"></div>
+        <div><label>Outcome</label><select class="inp" data-ok="outcome">
+          ${['ok','rework','scrap'].map(x=>`<option${(m.outcome||'ok')===x?' selected':''}>${x}</option>`).join('')}
+        </select></div>
+      </div>
+    </div>`;
+  });
+  h += `<div id="qcCoverage"></div></div>`;
+
+  // ---- Part outcome ----
+  const oc = M.outcome||{};
+  h += `<div class="card"><h3>Part outcome</h3><div class="fgrid">
+    <div><label>Parts good</label><input class="inp" type="number" min="0" data-ock="parts_good" value="${oc.parts_good??''}"></div>
+    <div><label>Parts scrap</label><input class="inp" type="number" min="0" data-ock="parts_scrap" value="${oc.parts_scrap??''}"></div>
+    <div><label>Rework</label><input class="inp" data-ock="rework" value="${esc(oc.rework||'')}"></div>
+    </div>
+    <div class="fgrid wide"><div><label>Notes</label>
+      <textarea class="inp" data-ock="notes">${esc(oc.notes||'')}</textarea></div></div></div>`;
+
+  // ---- Finish ----
+  h += `<div class="card" style="border:2px solid var(--primary)">
+    <h3>Finish — save these to the part folder</h3>
+    <p class="lead">No “submit”: what you typed is already saved in this browser. To feed it into the
+    report, download both files, drop them into <code>${esc(inp.part)}</code>’s folder, and re-run
+    <code>closed_loop.py "&lt;part folder&gt;"</code>.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" data-act="dl-job">⬇ Download job.json</button>
+      <button class="btn" data-act="dl-qc">⬇ Download operation_qc_map.json</button>
+    </div></div>`;
+
+  return h;
+}
+function updateQcCoverage(root){
+  const box = root.querySelector('#qcCoverage'); if(!box) return;
+  const dims = (DATA.closed_loop.inputs.qc_dims||[]).map(d=>d.sl);
+  const cover = {};
+  root.querySelectorAll('[data-op]').forEach(r=>{
+    const op = r.getAttribute('data-op');
+    r.querySelectorAll('.qcchip.on').forEach(c=>{
+      const sl = +c.getAttribute('data-sl'); (cover[sl] = cover[sl]||[]).push(op);
+    });
+  });
+  const unmapped = dims.filter(sl=>!cover[sl]);
+  const multi = Object.entries(cover).filter(([,o])=>o.length>1);
+  let x = `<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:12px">
+    <b style="font-size:.85rem">Coverage — ${dims.length-unmapped.length} / ${dims.length} inspected dimensions mapped to an operation</b>`;
+  if(unmapped.length){
+    x += `<div style="margin-top:6px"><span class="chiplabel" style="color:var(--r-c)">not mapped to any operation yet</span> `
+       + unmapped.map(sl=>`<span class="qcchip" style="border-color:var(--r-c);color:var(--r-c)">${sl}</span>`).join('') + `</div>`;
+  } else {
+    x += `<div style="margin-top:6px;color:var(--g-c);font-size:.83rem">✓ every inspected dimension is covered by at least one operation</div>`;
+  }
+  if(multi.length) x += `<div class="dim" style="margin-top:6px;font-size:.8rem">mapped to more than one operation: ${multi.map(([s,o])=>s+' ×'+o.length).join(', ')}</div>`;
+  box.innerHTML = x + `</div>`;
+}
+function wireInputs(){
+  const root = document.querySelector('.tabpanel[data-panel="inputs"]');
+  if(!root) return;
+  const mark = ()=>{ const s = root.querySelector('#inpSaved'); if(s) s.textContent = 'saved in this browser ✓'; };
+  const touch = ()=>{ saveInputs(collectInputs()); mark(); updateQcCoverage(root); };
+  root.addEventListener('input', touch);
+  root.addEventListener('change', touch);
+  root.querySelectorAll('.qcchip').forEach(c=>c.addEventListener('click', ()=>{ c.classList.toggle('on'); touch(); }));
+  const byId = id => root.querySelector('#'+id);
+  root.querySelectorAll('[data-act="dl-job"]').forEach(b=>b.addEventListener('click',
+      ()=>downloadJSON('job.json', buildJobJson(collectInputs()))));
+  root.querySelectorAll('[data-act="dl-qc"]').forEach(b=>b.addEventListener('click',
+      ()=>downloadJSON('operation_qc_map.json', buildQcMap(collectInputs()))));
+  updateQcCoverage(root);
+  byId('addRun') && byId('addRun').addEventListener('click', ()=>{
+    const M = collectInputs(); M.runs.push({start:'',end:'',note:''}); saveInputs(M);
+    root.innerHTML = inputsTab(); root.querySelectorAll('[data-tip]').forEach(bindTip); wireInputs();
+  });
+  byId('inpClear') && byId('inpClear').addEventListener('click', ()=>{
+    try{ localStorage.removeItem(inputsKey()); }catch(e){}
+    root.innerHTML = inputsTab(); root.querySelectorAll('[data-tip]').forEach(bindTip); wireInputs();
+  });
+}
+
+/* ---------- setups / workholding + designed-vs-posted-vs-run ---------- */
+function _kv(k, v, dim){
+  return `<tr><td style="text-align:left;font-weight:600;white-space:nowrap;width:1%;padding-right:16px;vertical-align:top">${k}</td>
+    <td style="text-align:left;white-space:normal">${v || (dim ? `<span class="dim">${dim}</span>` : '—')}</td></tr>`;
+}
+function setupsCard(cl){
+  const setups = cl.setups || [], cp = cl.cam_project;
+  if(!setups.length && !cp) return '';
+  let h = `<div class="card"><h3>Setups &amp; workholding
+    ${infoIcon('Each block is one datum the part was set up against on the machine. Which operations used it and how the part sits in it come straight from the CAM file; how it was actually clamped is filled in once that\'s recorded.','Setups')}</h3>`;
+  if(cp) h += `<p class="lead">CAM project <code>${esc(cp.project_file)}</code> — workplanes
+    ${(cp.workplanes||[]).map(esc).join(', ')}. ${esc(cp.note||'')}</p>`;
+  setups.forEach(s=>{
+    const wh = s.workholding || {};
+    const whTxt = [wh.type, wh.detail].filter(x=>x && String(x).trim()).map(esc).join(' — ');
+    const st = s.stock_actual_mm || {};
+    const haveStock = st.x || st.y || st.z;
+    const wt = s.workplane_transform;
+    const oriTag = s.orientation_source ? ` <span class="dim">(${esc(s.orientation_source)})</span>` : '';
+    h += `<div style="border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:12px">
+      <div style="font-weight:600">${esc(s.id || ('Workplane ' + s.cam_workplane))}
+        <span class="dim" style="font-weight:400">· CAM workplane ${esc(String(s.cam_workplane||'?'))}
+        · ${(s.operations||[]).length} operations${s.source==='cam_project'?' · from the CAM project':''}</span></div>
+      <table style="margin-top:8px"><tbody>
+        ${_kv('Operations', (s.operations||[]).map(esc).join(', '))}
+        ${_kv('Orientation', (s.orientation ? esc(s.orientation) + oriTag : ''), 'not recorded')}
+        ${wt ? _kv('Workplane transform', `rotation ${wt.rotation_deg}° · datum at model (${(wt.origin_model_mm||[]).join(', ')}) mm · workplane Z = (${(wt.z_axis_in_model||[]).join(', ')}) in the model`) : ''}
+        ${_kv('Workholding', whTxt, 'not recorded — add in the Inputs tab')}
+        ${_kv('Datum touched off', (wh.datum_touched_off && esc(wh.datum_touched_off))
+             + (wh.gcode_offset ? ` <span class="dim">(${esc(wh.gcode_offset)})</span>` : ''),
+             'not recorded')}
+        ${haveStock ? _kv('Measured stock', ['x','y','z'].map(k=>st[k]==null?'?':st[k]).join(' × ') + ' mm') : ''}
+        ${s.notes ? _kv('Notes', esc(s.notes)) : ''}
+      </tbody></table></div>`;
+  });
+  const ph = cl.workholding_photos || [];
+  if(ph.length){
+    h += `<div style="margin-top:16px"><span class="chiplabel">Workholding photos (${ph.length})</span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">`
+      + ph.map(p=>`<a href="${p.data_uri}" target="_blank" rel="noopener" title="${esc(p.name)} — click to open full size">
+          <img src="${p.data_uri}" alt="${esc(p.name)}" loading="lazy"
+               style="height:210px;width:auto;border-radius:8px;border:1px solid var(--line);display:block"></a>`).join('')
+      + `</div><p class="lead" style="margin:8px 0 0">From <code>&lt;part folder&gt;/Workholding/</code>. Click to enlarge.</p></div>`;
+  }
+  return h + `</div>`;
+}
+function designedTable(recs){
+  const rows = (recs||[]).filter(r=>r.planned_cam);
+  if(!rows.length) return '';
+  const ord = rows.slice().sort((a,b)=>{
+    const ra=a.actual&&a.actual.run_order, rb=b.actual&&b.actual.run_order;
+    if(ra!=null&&rb!=null) return ra-rb; if(ra!=null) return -1; if(rb!=null) return 1;
+    return String(a.cam_file).localeCompare(String(b.cam_file));
+  });
+  return `<div class="card"><h3>As designed → as posted → as run
+    ${infoIcon('Three versions of the same numbers. Designed is what the CAM software originally worked out. Posted is what actually ended up in the machine program. Run is what the machine actually did, from its own readings. Designed not matching posted means someone hand-edited the program afterwards; posted not matching run is the operator adjusting things on the machine.','Designed vs posted vs run')}</h3>
+    <div class="scroll"><table>
+    <thead><tr><th>Operation</th><th>Setup</th><th>Strategy</th><th>Stepdown</th>
+    <th>Vc des</th><th>fz des</th><th>F des</th><th>F posted</th><th>F run</th>
+    <th>S posted</th><th>S run</th></tr></thead><tbody>`
+    + ord.map(r=>{
+        const c=r.planned_cam, p=r.programmed||{}, a=r.actual||{};
+        const hand = c.designed_feed_cut!=null && p.F_cut!=null && Math.abs(c.designed_feed_cut-p.F_cut)>1;
+        return `<tr>
+          <td>${esc(r.operation)}</td>
+          <td class="mono">${esc(String(c.workplane||'—'))}</td>
+          <td class="dim">${esc(c.strategy||'—')}</td>
+          <td class="mono">${c.stepdown_mm!=null?c.stepdown_mm:'—'}</td>
+          <td class="mono">${c.designed_vc_m_min!=null?c.designed_vc_m_min.toFixed(1):'—'}</td>
+          <td class="mono">${c.designed_fz_mm!=null?c.designed_fz_mm.toFixed(3):'—'}</td>
+          <td class="mono">${c.designed_feed_cut??'—'}</td>
+          <td class="mono" style="${hand?'color:var(--a-c);font-weight:700':''}">${p.F_cut??'—'}</td>
+          <td class="mono">${a.feed_median??'<span class="dim">—</span>'}</td>
+          <td class="mono">${p.S??'—'}</td>
+          <td class="mono">${a.rpm_median??'<span class="dim">—</span>'}</td>
+        </tr>`;
+      }).join('')
+    + `</tbody></table></div>
+    <p class="lead" style="margin-top:12px">Drilling operations show the peck feed as F. <b>F run / S run</b>
+    are blank where the operation ran outside the logged telemetry window. An amber <b>F posted</b> means it
+    differs from the CAM-designed feed (the <code>.tap</code> was edited after posting).</p></div>`;
+}
+
+/* ---------- step-by-step (intra-operation) deviation notes ---------- */
+function stepsTab(){
+  const cl = DATA.closed_loop || {};
+  const sa = cl.step_analysis;
+  const havePlanned = (cl.records||[]).some(r=>r.planned_cam);
+  if(!sa && !(cl.setups||[]).length && !havePlanned){
+    return `<div class="card">Nothing here yet. Add <code>step_analysis.json</code>, and/or a PowerMILL
+      project folder + <code>job.json</code>, to the part folder and re-run <code>closed_loop.py</code>.</div>`;
+  }
+  let h = '';
+  if(sa && sa.coverage){
+    h += `<div class="warnbox"><b>What we could actually see</b><p>${esc(sa.coverage)}</p></div>`;
+  }
+  if(sa && sa.intro){
+    h += `<p class="lead" style="margin-top:1rem">${esc(sa.intro)}</p>`;
+  }
+  h += setupsCard(cl);
+  h += designedTable(cl.records);
+  if(!sa) return h;
+  if((sa.glossary||[]).length){
+    h += `<details class="card"><summary style="font-weight:600;cursor:pointer">Plain-English glossary
+        — ${sa.glossary.length} terms ${infoIcon('Every term used in the operation notes below, in ordinary language. Open this first if a note does not read clearly.','Glossary')}</summary>
+      <dl style="margin:14px 0 0">`
+      + sa.glossary.map(g=>`<dt style="font-weight:600;margin-top:12px">${esc(g.term)}</dt>
+          <dd class="lead" style="margin:3px 0 0">${esc(g.def)}</dd>`).join('')
+      + `</dl></details>`;
+  }
+  (sa.operations||[]).forEach(o=>{
+    const rowsHtml = [
+      ['CAM program', o.what_cam_said],
+      ['What the machine did', o.what_happened],
+      ['What it means', o.what_it_means],
+      ['Caveat', o.caveat],
+    ].filter(([,v])=>v).map(([k,v])=>`<tr>
+        <td style="text-align:left;font-weight:600;white-space:nowrap;vertical-align:top;width:1%;padding-right:16px">${k}</td>
+        <td style="text-align:left;white-space:normal">${esc(v)}</td></tr>`).join('');
+    h += `<div class="card"><h3>${esc(o.operation)}
+        ${o.feature?`<span class="dim" style="font-weight:400">— ${esc(o.feature)}</span>`:''}</h3>
+      ${o.headline?`<p style="font-weight:600;margin:.1rem 0 .8rem">${esc(o.headline)}</p>`:''}
+      <div class="scroll"><table><tbody>${rowsHtml}</tbody></table></div></div>`;
+  });
+  if((sa.cross_cutting||[]).length){
+    h += `<div class="card"><h3>Patterns across the whole part</h3><ul class="ins">`
+       + sa.cross_cutting.map(c=>`<li>${esc(c)}</li>`).join('') + `</ul></div>`;
+  }
+  return h;
+}
+
+/* ---------- Rules — what making this part is teaching the shop ---------- */
+function rulesTab(){
+  const cl = DATA.closed_loop||{}, sa = cl.step_analysis, kr = cl.knowledge_rules||[];
+  const haveRules = sa && (sa.rules||[]).length;
+  if(!haveRules && !kr.length)
+    return `<div class="card">No rules yet — they accumulate as parts run through
+      <code>closed_loop.py</code> and as notes are added to <code>step_analysis.json</code>.</div>`;
+  const rng = a => !a ? '—' : (a.length<2||Math.abs(a[0]-a[1])<1e-9
+      ? String(Math.round(a[0])) : `${Math.round(a[0])}–${Math.round(a[1])}`);
+  const qcBadge = q => Object.entries(q||{}).map(([k,v])=>{
+    const c = k==='PASS'?['var(--g-c)','var(--g-bg)']:k==='FAIL'?['var(--r-c)','var(--r-bg)']:['#94a3b8','#f1f5f9'];
+    return `<span class="pill" style="color:${c[0]};background:${c[1]};margin:1px 3px 1px 0">${esc(k)} ${v}</span>`;
+  }).join('')||'—';
+
+  let h = `<p class="lead">What making this part — and any earlier parts — is teaching the shop. With one
+    part the rules are provisional; each firms up as the knowledge base grows a pass-rate behind it.</p>`;
+
+  if(haveRules){
+    h += `<div class="card"><h3>Rules emerging from this part</h3><ul class="ins">`
+      + sa.rules.map(r=>`<li><b>${esc(r.rule)}</b>`
+          + (r.basis?`<br><span class="dim">basis — ${esc(r.basis)}</span>`:'')
+          + (r.confidence?` <span class="pill" style="color:var(--a-c);background:var(--a-bg);margin-left:4px">${esc(r.confidence)}</span>`:'')
+          + `</li>`).join('')
+      + `</ul></div>`;
+  }
+
+  if(kr.length){
+    h += `<div class="card"><h3>Parameter knowledge base
+      ${infoIcon('Every operation we\'ve recorded so far, grouped by material, tool and feature type. This is the table to check before programming something similar again — what speed and feed produced good parts last time. "n" is how many records that\'s based on, and how many different parts.','Knowledge base')}</h3>
+      <div class="scroll"><table>
+      <thead><tr><th>Material</th><th>Tool</th><th>Feature</th><th>n</th>
+      <th>S posted</th><th>S run</th><th>F posted</th><th>F run</th>
+      <th>Vc des</th><th>fz des</th><th>Feed ovr</th><th>QC</th></tr></thead><tbody>`
+      + kr.map(g=>`<tr>
+          <td>${esc(g.material||'?')}</td>
+          <td class="dim">${esc(g.tool_type||'?')}${g.dia_mm?` Ø${g.dia_mm}`:''}</td>
+          <td class="dim">${esc(g.feature||'?')}</td>
+          <td class="mono">${g.records}${g.parts>1?` / ${g.parts}p`:''}</td>
+          <td class="mono">${(g.S_posted||[]).join(', ')||'—'}</td>
+          <td class="mono">${rng(g.S_run)}</td>
+          <td class="mono">${(g.F_posted||[]).join(', ')||'—'}</td>
+          <td class="mono">${rng(g.F_run)}</td>
+          <td class="mono">${(g.vc_des||[]).join(', ')||'—'}</td>
+          <td class="mono">${(g.fz_des||[]).join(', ')||'—'}</td>
+          <td class="mono">${g.feed_override_pct?(g.feed_override_pct.map(v=>`${v>0?'+':''}${v}%`).join(' … ')):'—'}</td>
+          <td style="text-align:left;white-space:normal">${qcBadge(g.qc)}</td>
+        </tr>`).join('')
+      + `</tbody></table></div>
+      <p class="lead" style="margin-top:10px">“run” = median from telemetry while cutting. “Feed ovr” = actual
+      feed vs the posted feed. As rows accumulate across parts each becomes a recommended-parameter line
+      with a real pass-rate.</p></div>`;
+  }
+  return h;
+}
+
+const TABS = [
+  ['summary','Summary'],
+  ['parts','Part by part'],
+  ['steps','Step-by-step'],
+  ['rules','Rules'],
+  ['inputs','Inputs'],
+  ['gaps','Data gaps'],
+];
+
+function render(){
+  const app = document.getElementById('app');
+  if(!DATA){ app.innerHTML = '<div class="card">No data injected. Run <code>python krishna_metrics.py</code>.</div>'; return; }
+  const m = DATA.machine, runs = DATA.operations || DATA.runs;
+  const VS = views(m);
+
+  document.getElementById('sub').textContent =
+    `${DATA.source.factory_id}/${DATA.source.machine_id} · ${fmtDT(m.window_start)} → ${fmtClock(m.window_end)} IST`;
+
+  const bad = (DATA.field_health||[]).filter(f=>f.status!=='ok').length;
+  const cl0 = DATA.closed_loop;
+  const haveSteps = cl0 && (cl0.step_analysis || (cl0.setups||[]).length
+      || (cl0.records||[]).some(r=>r.planned_cam));
+  const haveInputs = cl0 && cl0.inputs;
+  const haveRules = cl0 && ((cl0.step_analysis && (cl0.step_analysis.rules||[]).length)
+      || (cl0.knowledge_rules||[]).length);
+  const tabs = TABS.filter(([id]) =>
+    (id!=='steps' || haveSteps) && (id!=='inputs' || haveInputs) && (id!=='rules' || haveRules));
+  const cacheNote = (cl0 && typeof cl0.telemetry_source === 'string' && cl0.telemetry_source.indexOf('cache') === 0)
+    ? `<div class="warnbox"><b>Machine telemetry is from cache — not a fresh pull</b>
+       <p>${esc(cl0.telemetry_source)}. The CAM plan, QC, setup inputs and rules on this page are
+       current; the utilisation / cutting-time / per-operation actuals are from the last successful
+       InfluxDB pull.</p></div>` : '';
+  const partSwitcher = MACHINED ? `<div class="filters" style="margin-bottom:1rem">
+      <div class="fh">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+        Part
+      </div>
+      <div class="frow"><div class="fld" style="flex:1">
+        <label>Machined part (${MACHINED.length} on this machine)</label>
+        <select class="control" id="partSel" style="min-width:320px">${MACHINED.map((p,i)=>
+          `<option value="${i}" ${i===PART_IX?'selected':''}>${esc(p.label)}${p.part_id&&p.part_id!==p.label?' — '+esc(p.part_id):''}</option>`).join('')}</select>
+      </div></div>
+      <p class="note">Switching part re-renders every tab for that part. The <b>Rules</b> tab's parameter
+        knowledge base aggregates across all ${MACHINED.length} parts.</p>
+    </div>` : '';
+  app.innerHTML = partSwitcher + filterPanel(m, VS) + cacheNote
+    + `<div class="tabs" id="tabs">` + tabs.map(([id,label],i)=>
+        `<button role="tab" data-tab="${id}" aria-selected="${i===0}">${label}${id==='gaps'&&bad?` (${bad})`:''}</button>`).join('') + `</div>`
+    + tabs.map(([id])=>`<div class="tabpanel" data-panel="${id}" ${id==='summary'?'':'hidden'}></div>`).join('');
+
+  let curView = VS[0].id;
+  const panels = {
+    summary: () => summaryTab(VS.find(v=>v.id===curView) || VS[0], runs),
+    parts:   () => partsTab(runs),
+    steps:   () => stepsTab(),
+    rules:   () => rulesTab(),
+    inputs:  () => inputsTab(),
+    gaps:    () => gapsTab(),
+  };
+  const built = {};
+  function paint(id){
+    const p = document.querySelector(`.tabpanel[data-panel="${id}"]`);
+    p.innerHTML = panels[id](); p.querySelectorAll('[data-tip]').forEach(bindTip);
+    if(id==='inputs') wireInputs();
+    built[id]=1;
+  }
+  function show(id){
+    document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab===id));
+    document.querySelectorAll('.tabpanel').forEach(p => {
+      const on = p.dataset.panel===id; p.hidden = !on;
+      if(on && !built[id]) paint(id);
+    });
+  }
+  document.getElementById('tabs').addEventListener('click', e => {
+    const b = e.target.closest('button'); if(b) show(b.dataset.tab);
+  });
+  document.getElementById('rangeSel').addEventListener('change', e => {
+    curView = e.target.value; paint('summary');       // date range only affects Summary
+  });
+  const psel = document.getElementById('partSel');
+  if(psel) psel.addEventListener('change', e => { activatePart(+e.target.value); render(); });
+  show('summary');
+}
+render();
+</script>

@@ -1,0 +1,16 @@
+# secrets — never commit
+.env
+
+# generated report artifacts — regenerate with closed_loop.py, don't track
+krishna_report.html
+krishna_metrics.json
+**/closed_loop_record.json
+
+# python
+__pycache__/
+*.pyc
+
+# OS / PowerMill lock junk that sometimes rides along in the CAM Project folders
+desktop.ini
+lockfile
+Thumbs.db
