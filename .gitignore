@@ -1,3 +1,7 @@
+# part data now lives on Google Drive (G:\My Drive\Closed Loop\Clean Data),
+# shared/synced across the team — not committed here any more. See README.
+data/
+
 # secrets — never commit
 .env
 

@@ -26,6 +26,27 @@ speed, cost, or parameter tuning. Every reliability win gets logged in
 `RELIABILITY_LOG.md`, in language a machinist/programmer would recognise as
 real, not a statistic they have to trust blindly.
 
+## Data moved to Google Drive (2026-09-14)
+
+Part data no longer lives in this repo's `data/` folder — it's now at
+`G:\My Drive\Closed Loop\Clean Data\` (shared/synced, so anyone can drop in a
+new part's CAM/QC without touching git). Verified: Bottom Plate-Krishna and
+NAS PC CPU Top Plate (2026-09-09)-Krishna on Drive are byte-identical to what
+was committed here; ran `closed_loop.py` directly against the Drive paths
+and it reads/writes there fine (`closed_loop_record.json` lands back on
+Drive). `data/` untracked from git (`.gitignore`'d), old committed copies
+still in history if ever needed, not deleted from disk yet.
+
+**New gap found while testing this:** `Clean Data` now also has
+`Motor Mount_TS` — a part on a **different machine** (TS, not Krishna/STM).
+This pipeline currently hardcodes one `--machine-id`/`--factory-id` per run
+(CLI args, same for every part folder passed in) — there's no per-part
+machine/factory override, so `--parts-root` can't safely be pointed at the
+whole `Clean Data` folder once it's multi-machine; it would try to pull
+Motor Mount_TS's telemetry as if it were STM/krishna. Added to next steps
+below. Until fixed, call `closed_loop.py` with explicit Krishna part paths,
+not `--parts-root` on the shared Drive root.
+
 ## Current status (as of the 2026-09-12 split)
 
 - 2 parts processed: Bottom Plate (SE-004-052, 4-Sep, ~21% telemetry
@@ -107,6 +128,14 @@ wasted.
    supports (an in-cycle probing cycle? any force/load signal beyond the
    already-dead `spindle_load`?) — this determines whether "close the loop
    mid-part" is a real near-term option or needs new hardware.
+
+7. **Add per-part machine/factory support**, now that `Clean Data` holds
+   more than one machine's parts (`Motor Mount_TS` alongside the Krishna
+   parts). `job.json` already has `machine`/`factory` fields per part — they
+   just aren't read back to override the CLI's `--machine-id`/
+   `--factory-id` yet. Needed before `--parts-root` (or any shared script)
+   can safely run across the whole Drive folder instead of needing Krishna
+   parts singled out by hand every time.
 
 ## Explicitly NOT in this list
 

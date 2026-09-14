@@ -33,15 +33,33 @@ cp .env.example .env      # then fill in the real InfluxDB values
 `.env` is gitignored — never commit real credentials. Every script also works
 with `--no-telemetry` (CAM + QC only, no InfluxDB call).
 
+## Data location
+
+Part data (CAM, QC, job.json, photos) lives on **Google Drive**, not in this
+repo — `G:\My Drive\Closed Loop\Clean Data\` — so the whole team can add/edit
+a part without touching git. This repo holds the code + the accumulated
+`shop_knowledge.jsonl` only.
+
+`Clean Data` currently holds parts from more than one machine (folder names
+carry the machine, e.g. `-Krishna` / `_TS`). **This pipeline is Krishna/STM-
+specific right now** (`--machine-id`/`--factory-id` default to STM/krishna
+for every part in a run) — point it at Krishna part folders explicitly, or
+by a subset, not blindly at the whole `Clean Data` root, until per-part
+machine/factory support is added (see SESSION_STATE.md).
+
 ## Run it
 
 ```bash
 # one part
-python closed_loop.py "data/Bottom Plate"
+python closed_loop.py "G:\My Drive\Closed Loop\Clean Data\Bottom Plate-Krishna"
 
-# every part folder under data/, combined into one multi-part report
-python closed_loop.py --parts-root data
+# specific Krishna parts, combined into one multi-part report
+python closed_loop.py "G:\My Drive\Closed Loop\Clean Data\Bottom Plate-Krishna" "G:\My Drive\Closed Loop\Clean Data\NAS PC CPU Top Plate (2026-09-09)-Krishna"
 ```
+
+`--parts-root` (auto-discovering every part folder) works the same way, but
+only point it at a folder whose immediate children are all Krishna parts —
+see the caveat above.
 
 Output: `krishna_report.html` (open it in a browser — self-contained, no
 server needed), `krishna_metrics.json`, and per-part `closed_loop_record.json`
@@ -50,7 +68,7 @@ hand-filled — see below).
 
 ## Adding a new part
 
-Create `data/<part name>/` with:
+Create `G:\My Drive\Closed Loop\Clean Data\<part name>-Krishna\` with:
 
 ```
 input/<PART>.stp  <PART>.pdf              # CAD model + drawing
