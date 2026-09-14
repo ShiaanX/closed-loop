@@ -77,8 +77,8 @@ wasted.
 
 1. **Automate the pipeline run.** Today, every regeneration is a person
    running `closed_loop.py` by hand after manually dropping files in.
-   Needed: detect new telemetry/QC/CAM automatically (watch the `data/`
-   folder, or poll InfluxDB for a new part window) and re-run without a
+   Needed: detect new telemetry/QC/CAM automatically (watch the Google Drive
+   `Clean Data` folder, or poll InfluxDB for a new part window) and re-run without a
    human remembering to. This is itself a reliability item — a forgotten
    manual step is exactly the kind of gap this log exists to catch.
 
