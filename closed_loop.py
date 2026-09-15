@@ -47,6 +47,14 @@ PILOT_ACTUAL = "2026-09-04T03:30:00Z,2026-09-04T13:30:00Z"
 RPM_FLAG_PCT = 15          # |actual − programmed| beyond this % of programmed → flag
 FEED_FLAG_PCT = 15
 
+# domain-rule root-cause hints (see SESSION_STATE.md #4) — plain engineering
+# judgement, not statistics: thresholds are deliberately conservative (only
+# fire on a large, already-linked-to-a-failure deviation) so these read as a
+# suggestion worth checking, not a diagnosis.
+ROOT_CAUSE_FEED_PCT = 30   # feed deviation beyond this %, on a FAILED op, gets called out
+ROOT_CAUSE_ALARM_N = 10    # alarm count beyond this gets a benign/worth-a-look qualifier
+_TAP_WORD = re.compile(r"\btap|thread", re.I)   # matches tap/tapped/tapping/tap-drill, not "bootstrap"
+
 
 # ───────────────────────────────────────────────────────────────── CAM ──
 
@@ -411,8 +419,35 @@ def build_records(cam_paths, tele, qc_rows, op_qc_map, part_meta,
             flags.append(f"actual RPM {deltas['rpm_pct']:+.0f}% vs programmed")
         if "feed_pct" in deltas and abs(deltas["feed_pct"]) > FEED_FLAG_PCT:
             flags.append(f"actual feed {deltas['feed_pct']:+.0f}% vs programmed")
+
+        # domain-rule root-cause hints — engineering judgement now, not waiting on
+        # enough volume for statistics to imply causation (closed-loop SESSION_STATE #4)
+        if outcome == "FAIL" and abs(deltas.get("feed_pct") or 0) > ROOT_CAUSE_FEED_PCT:
+            flags.append(f"feed ran {deltas['feed_pct']:+.0f}% off programmed on an operation "
+                         f"with a failed dimension — worth checking whether the feed change is a "
+                         f"contributing factor")
+        for r in graded:
+            if r["pass"] is False and _TAP_WORD.search(
+                    f"{r.get('remark') or ''} {r.get('description') or ''}"):
+                flags.append(f"SL{r['sl']} failed and its remark/description mentions a "
+                             f"tapped/threaded feature — large misses here are often the nominal "
+                             f"being the thread's major diameter while a minor/tap-drill diameter "
+                             f"got measured, not a real defect; verify against the drawing before "
+                             f"treating this as a process failure")
+                break  # one mention is enough — don't repeat per dimension
+
         if actual and actual["alarms"]:
-            flags.append(f"{actual['alarms']} alarm event(s) during the op")
+            n = actual["alarms"]
+            if n >= ROOT_CAUSE_ALARM_N and outcome == "FAIL":
+                flags.append(f"{n} alarm event(s) during the op, AND a QC failure here — unlike "
+                             f"most high-alarm operations on this machine (routine retract/cycle "
+                             f"noise), this pairing is worth a closer look")
+            elif n >= ROOT_CAUSE_ALARM_N:
+                flags.append(f"{n} alarm event(s) during the op — high count, but this machine "
+                             f"raises the alarm flag on routine things (e.g. every drill-cycle "
+                             f"retract); with no linked QC failure here, treat as likely benign")
+            else:
+                flags.append(f"{n} alarm event(s) during the op")
         if actual and (actual["cycles"] or 0) > 1:
             flags.append("more cycles than the CAM program has")
         if outcome == "FAIL":
@@ -601,7 +636,10 @@ _JOB_TEMPLATE = {
         "was actually a different part (e.g. the operator reused a program name later that day), list "
         "it there by its exact program_name + start time (from the closed-loop table's flags, or the "
         "console output) — it stays in the machine-level Summary tab but drops out of this part's "
-        "operation / closed-loop analysis."),
+        "operation / closed-loop analysis. "
+        "`machine`/`factory`: pre-filled from this run's --machine-id/--factory-id; edit them if this "
+        "part is actually on a different machine — closed_loop.py reads them back, so one --parts-root "
+        "run can safely cover parts on different machines side by side."),
     "part": None, "part_name": None, "quantity": 1,
     "material": None, "machine": "STM", "factory": "krishna",
     "runs": [
@@ -640,6 +678,7 @@ def _write_job_template(job_path: Path, part_id, qc_meta, args, cam_project) -> 
     t["part"] = part_id
     t["part_name"] = qc_meta.get("part_name") or part_id
     t["material"] = qc_meta.get("material") or None
+    t["machine"], t["factory"] = args.machine_id, args.factory_id
     t["runs"][0]["start"], t["runs"][0]["end"] = args.start, args.end
     if cam_project:
         wpd = cam_project.get("workplane_detail") or {}
@@ -719,6 +758,17 @@ def assemble_part(part_dir: Path, args, km) -> dict | None:
     print(f"QC        : {qc_xlsx.name if qc_xlsx else 'NONE'}")
     print(f"CAD       : {step.name if step else 'NONE'}")
     print(f"job.json  : {'loaded' if job else 'not present (see the template it writes)'}")
+
+    # job.json machine/factory override the CLI defaults (on the per-part copy only) —
+    # lets one --parts-root run span parts on different machines, e.g. Krishna/STM and
+    # TS side by side, instead of assuming every part folder is the same machine.
+    if job and (job.get("machine") or job.get("factory")):
+        prev_machine, prev_factory = a.machine_id, a.factory_id
+        a.machine_id = job.get("machine") or a.machine_id
+        a.factory_id = job.get("factory") or a.factory_id
+        if (a.machine_id, a.factory_id) != (prev_machine, prev_factory):
+            print(f"          machine/factory from job.json: {a.factory_id}/{a.machine_id}"
+                  f" (was {prev_factory}/{prev_machine})")
 
     # job.json run windows override the CLI dates (on the per-part copy only)
     if job and job.get("runs"):

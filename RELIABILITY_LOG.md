@@ -105,6 +105,28 @@ directly** — the foundation for ever being able to say "this is what a good
 operator does differently from a risky one," which is a reliability question,
 not a speed one.
 
+### A tapped-hole failure now flags itself — no longer needs a person to notice
+The "SL8 looks like a wrong reference, not a real defect" call two weeks ago
+was made by hand, reading the remark column. **That judgement is now built
+into the pipeline itself**: any QC dimension whose remark/description
+mentions a tapped or threaded feature and fails gets automatically flagged
+as "verify against the drawing before treating this as a process failure" —
+every future part, without anyone having to remember to look. Same idea for
+alarms: the system now tells the difference between "high alarm count, no
+QC problem — that's just this machine's normal retract noise" and "high
+alarm count **and** a QC failure — that combination is actually worth a
+look," instead of a flat, undifferentiated alarm count that reads the same
+whether the part passed or not.
+
+### One machine's data can no longer silently get the wrong machine's credentials
+As more machines' data land in the shared folder side by side, the system
+needs to know which telemetry source belongs to which part. That's now read
+from each part's own job file instead of being one setting for a whole
+batch — so pulling Krishna's data for a Krishna part and a different
+machine's data for a different machine's part happens automatically and
+correctly, instead of relying on whoever runs the report to remember to
+switch machines by hand.
+
 ---
 
 *Keep adding to this. The rule for a new entry: it should make a machinist,

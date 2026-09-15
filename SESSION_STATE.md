@@ -64,6 +64,28 @@ not `--parts-root` on the shared Drive root.
 - Credentials moved out of source into `.env` (gitignored) as part of this
   repo split — see README.
 
+## Done (2026-09-15)
+
+- **#1 Per-part machine/factory support** — `job.json`'s `machine`/`factory`
+  now override the CLI default per part in `assemble_part` (before telemetry
+  is pulled), so one `--parts-root` run can safely span parts on different
+  machines. New template job.json defaults these two fields from whatever
+  `--machine-id`/`--factory-id` the first run used, instead of always
+  hardcoding STM/krishna. Tested with a throwaway part + `--no-telemetry`:
+  console prints the override, `part_meta.machine`/`.factory` reflect it
+  correctly, real `shop_knowledge.jsonl` untouched.
+- **#4 Domain-rule root-cause flags** — three rules added to `build_records`:
+  (a) a large feed deviation on an operation with a FAILED linked dimension
+  gets called out as a possible contributing factor; (b) a failed dimension
+  whose QC remark/description mentions a tapped/threaded feature gets
+  flagged as a likely nominal-reference mismatch, not a real defect — this
+  is the exact SL8 case from `RELIABILITY_LOG.md`, now automatic; (c) the
+  alarm-count flag now says "likely benign" when there's no linked QC
+  failure vs. "worth a closer look" when there is one. Verified against real
+  data (Bottom Plate + Top Plate) — caught one regex bug in testing
+  (`\btap\b` missed "Tapped", fixed to `\btap`) before it shipped silently
+  broken.
+
 ## Next steps — what to BUILD now (not data collection)
 
 The user is already tracking "collect more data" as its own, separate,
@@ -109,18 +131,7 @@ wasted.
    exist now, even though it won't say anything useful until a tool has
    real history behind it. Starting late just delays when it becomes useful.
 
-5. **Add domain-rule root-cause flags, don't wait for statistics to imply
-   causation.** Right now the report shows *correlated* oddities (feed
-   override, alarms, cycle count) next to a QC result, but doesn't say which
-   one is likely the cause. A few rules an engineer can write today, no data
-   volume needed: "feed override far above 100% on a finishing pass + an
-   oversize failure → flag likely deflection", "QC nominal doesn't match a
-   tapped/threaded feature's actual reference → flag likely wrong-reference
-   before flagging the part," etc. This turns "here's what's unusual" into
-   "here's a plausible reason," using engineering judgement now rather than
-   waiting on volume that may take months.
-
-6. **Scope whether in-process ground truth is even possible on this
+5. **Scope whether in-process ground truth is even possible on this
    machine** — not a build yet, a research task. Today the only quality
    signal is the final QC sheet, after the part is fully done — too late to
    intervene, and it only checks final dimensions. Before assuming this needs
@@ -128,14 +139,6 @@ wasted.
    supports (an in-cycle probing cycle? any force/load signal beyond the
    already-dead `spindle_load`?) — this determines whether "close the loop
    mid-part" is a real near-term option or needs new hardware.
-
-7. **Add per-part machine/factory support**, now that `Clean Data` holds
-   more than one machine's parts (`Motor Mount_TS` alongside the Krishna
-   parts). `job.json` already has `machine`/`factory` fields per part — they
-   just aren't read back to override the CLI's `--machine-id`/
-   `--factory-id` yet. Needed before `--parts-root` (or any shared script)
-   can safely run across the whole Drive folder instead of needing Krishna
-   parts singled out by hand every time.
 
 ## Explicitly NOT in this list
 

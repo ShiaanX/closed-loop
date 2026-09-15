@@ -41,11 +41,13 @@ a part without touching git. This repo holds the code + the accumulated
 `shop_knowledge.jsonl` only.
 
 `Clean Data` currently holds parts from more than one machine (folder names
-carry the machine, e.g. `-Krishna` / `_TS`). **This pipeline is Krishna/STM-
-specific right now** (`--machine-id`/`--factory-id` default to STM/krishna
-for every part in a run) — point it at Krishna part folders explicitly, or
-by a subset, not blindly at the whole `Clean Data` root, until per-part
-machine/factory support is added (see SESSION_STATE.md).
+carry the machine, e.g. `-Krishna` / `_TS`). `--machine-id`/`--factory-id`
+still set the *default* for a run, but each part's own `job.json` can
+override them (`machine`/`factory` fields) — a part folder that's already
+been run once and has a `job.json` will always pull its own machine's
+telemetry correctly, even in a mixed `--parts-root` run. A **new** part with
+no `job.json` yet still needs its first run pointed at with the right
+`--machine-id`/`--factory-id`, since that's what seeds the template.
 
 ## Run it
 
